@@ -15,9 +15,9 @@ ibm = data.get_data_yahoo('IBM',
                                  start=datetime.datetime(2000, 10, 1),
                                  end=datetime.datetime(2015, 1, 1))                                 
 
-data = pd.concat([aapl, spy, ibm], axis=1)
+data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1)
 
-analyzer = qqpat.Analizer(data, column='Adj Close', column_type='price')
+analyzer = qqpat.Analizer(data, column_type='price')
 
 analyzer.plot_analysis_returns()
 analyzer.plot_analysis_rolling()

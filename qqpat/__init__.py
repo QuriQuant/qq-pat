@@ -24,11 +24,18 @@ def lastValue(x):
 
 class Analizer:
 
-    def __init__(self, df, column='', column_type=''):
-        if column_type == 'price':
-            self.data = pd.DataFrame(df[column].pct_change())
+    def __init__(self, df, column_type='return'):
+        
+        if column_type == 'price':    
+            all_series = []
+            df = pd.DataFrame(df)
+            for i in range(0, len(df.columns)):
+                series = pd.Series(df.iloc[:,i])
+                returns = series.pct_change(fill_method='pad').dropna()
+                all_series.append(returns)
+            self.data = pd.concat(all_series, axis=1)             
         elif column_type == 'return':
-            self.data = pd.DataFrame(df[column])
+            self.data = pd.DataFrame(df)
         else:
             raise ValueError('column_type \'{}\' not valid'.format(column_type))
 
