@@ -1,13 +1,13 @@
 Metadata-Version: 1.1
 Name: qqpat
-Version: 1.0
+Version: 1.1
 Summary: Python Financial Performance Analysys Tool
-Home-page: http://github.com/quriquant/qqpat
+Home-page: http://github.com/quriquant/qq-pat
 Author: QuriQuant
 Author-email: suport@quriquant.com
 License: MIT
 Description: UNKNOWN
-Keywords: funniest joke comedy flying circus
+Keywords: financial time series statistics performance analytics
 Platform: UNKNOWN
 Classifier: Development Status :: 3 - Alpha
 Classifier: License :: OSI Approved :: MIT License

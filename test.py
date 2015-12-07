@@ -19,6 +19,8 @@ data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1
 
 analyzer = qqpat.Analizer(data, column_type='price')
 
+print analyzer.get_statistics_summary()
+
 analyzer.plot_analysis_returns()
 analyzer.plot_analysis_rolling()
 analyzer.plot_monthly_returns_heatmap()
@@ -26,5 +28,7 @@ analyzer.plot_annual_returns()
 analyzer.plot_monthly_returns()
 analyzer.plot_annual_returns()
 analyzer.plot_monthly_return_distribution()
+analyzer.plot_drawdown_distribution()
+analyzer.plot_drawdown_length_distribution()
 
 

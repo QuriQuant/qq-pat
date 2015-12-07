@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.mlab as mlab
 import seaborn as sns
 
-__version__ = "1.0"
+__version__ = "1.1"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -31,7 +31,7 @@ class Analizer:
             df = pd.DataFrame(df)
             for i in range(0, len(df.columns)):
                 series = pd.Series(df.iloc[:,i])
-                returns = series.pct_change(fill_method='pad').dropna()
+                returns = series.pct_change(fill_method='pad')
                 all_series.append(returns)
             self.data = pd.concat(all_series, axis=1)             
         elif column_type == 'return':
@@ -41,7 +41,87 @@ class Analizer:
 
         self.ratios = {}
         self.timeseries = {}
-                
+        
+    def get_statistics_summary(self):
+    
+        all_win_ratio               = self.get_win_ratio()
+        all_reward_to_risk          = self.get_reward_to_risk()
+        all_cagr                    = self.get_cagr()
+        all_sharpe_ratio            = self.get_sharpe_ratio()
+        all_sortino_ratio           = self.get_sortino_ratio()
+        all_mar_ratio               = self.get_mar_ratio()
+        all_average_return          = self.get_returns_avg()
+        all_stddev_return           = self.get_returns_std() 
+        all_average_dd              = self.get_average_dd()
+        all_profit_factor           = self.get_profit_factor()
+        all_pearson_correlation     = self.get_pearson_correlation()
+        all_max_drawdown            = self.get_max_dd()
+        all_average_dd_length       = self.get_average_dd_length()
+        all_longest_dd_period       = self.get_longest_dd_period()
+        all_average_recovery        = self.get_average_recovery()
+        all_longest_recovery        = self.get_longest_recovery()
+        all_burke_ratio             = self.get_burke_ratio()
+        all_ulcer_index             = self.get_ulcer_index()
+        all_martin_ratio            = self.get_martin_ratio()
+        
+        all_statistics = []
+        
+        for i in range(0, len(self.data.columns)):
+        
+            statistics = {}           
+            statistics['max drawdown']              = all_max_drawdown[i]
+            statistics['win ratio']                 = all_win_ratio[i]
+            statistics['reward to risk']            = all_reward_to_risk[i]
+            statistics['cagr']                      = all_cagr[i]
+            statistics['sharpe ratio']              = all_sharpe_ratio[i]
+            statistics['sortino ratio']             = all_sortino_ratio[i]
+            statistics['mar ratio']                 = all_mar_ratio[i]
+            statistics['average return']            = all_average_return[i]
+            statistics['stddev returns']            = all_stddev_return[i]
+            statistics['average drawdown']          = all_average_dd[i]
+            statistics['average drawdown length']   = all_average_dd_length[i]
+            statistics['profit factor']             = all_profit_factor[i]
+            statistics['pearson correlation']       = all_pearson_correlation[i]
+            statistics['longest drawdown']          = all_longest_dd_period[i]
+            statistics['average recovery']          = all_average_recovery[i]
+            statistics['longest recovery']          = all_longest_recovery[i]
+            statistics['burke ratio']               = all_burke_ratio[i]
+            statistics['ulcer index']               = all_ulcer_index[i]
+            statistics['martin ratio']              = all_martin_ratio[i]
+            all_statistics.append(statistics)
+
+        return all_statistics 
+        
+    def get_profit_factor(self):
+          
+        all_profit_factor = []        
+        for i in range(0, len(self.data.columns)):                       
+            df = pd.Series(self.data.iloc[:,i]).dropna()     
+            profit_factor = df[df > 0].sum()/abs(df[df < 0].sum()) 
+            all_profit_factor.append(profit_factor)
+            
+        return all_profit_factor
+        
+    def get_reward_to_risk(self):
+          
+        all_reward_to_risk = []        
+        for i in range(0, len(self.data.columns)):                       
+            df = pd.Series(self.data.iloc[:,i]).dropna()     
+            reward_to_risk = df[df > 0].mean()/abs(df[df < 0].mean()) 
+            all_reward_to_risk.append(reward_to_risk)
+            
+        return all_reward_to_risk
+            
+    def get_win_ratio(self):
+          
+        all_win_ratio = []        
+        for i in range(0, len(self.data.columns)):                       
+            df = pd.Series(self.data.iloc[:,i]).dropna()     
+            win_ratio = float(len(df[df > 0]))/float(len(df))
+            all_win_ratio.append(win_ratio)
+            
+        return all_win_ratio   
+ 
     def get_rolling_return(self, period):
         data = self.data.dropna().resample('M', how=sum)
         return pd.rolling_sum(data, int(period)).dropna()
@@ -152,6 +232,40 @@ class Analizer:
             plt.xticks(rotation=90)
             plt.show()
             
+    def plot_drawdown_distribution(self):
+        
+        drawdowns = self.get_dd_period_depths()
+        
+        for df in drawdowns:
+        
+            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+               
+            n, bins, patches = ax.hist(df*100, bins=15, alpha=0.75) 
+            ax.axvline(df.mean(), linestyle='dashed', color="black")
+                       
+            ax.set_xlabel('Drawdowns (%)')
+            ax.set_ylabel('Frequency')
+             
+            plt.xticks(rotation=90)
+            plt.show()
+     
+    def plot_drawdown_length_distribution(self):
+        
+        drawdowns = self.get_dd_period_lengths()
+        
+        for df in drawdowns:
+        
+            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+               
+            n, bins, patches = ax.hist(df, bins=15, alpha=0.75) 
+            ax.axvline(df.mean(), linestyle='dashed', color="black")
+                       
+            ax.set_xlabel('Drawdown length (days)')
+            ax.set_ylabel('Frequency')
+             
+            plt.xticks(rotation=90)
+            plt.show()           
+            
     def plot_monthly_returns(self):
         
         returns = self.get_monthly_returns()
@@ -199,9 +313,8 @@ class Analizer:
         data = self.data.dropna()
         balance =(1+data).cumprod()
         weeklyReturns = self.get_weekly_returns()     
-        
-        self.ratios['returns_avg'] = self.get_returns_avg()
-        self.ratios['max_dd_start'], self.ratios['max_dd_end'], self.ratios['max_dd'] = self.get_max_dd()
+              
+        max_drawdown_start, max_drawdown_end  = self.get_max_dd_dates()
 
         underWaterSeries = self.get_underwater_data()
               
@@ -221,7 +334,7 @@ class Analizer:
         colors = []
         
         for i, color in enumerate(color_cycle):
-            if i<len(self.ratios['max_dd_start']):
+            if i<len(max_drawdown_start):
                 colors.append(color)
             else:
                 break
@@ -238,9 +351,9 @@ class Analizer:
         ax3.set_ylabel('Drawdown')
                     
         #self.timeseries['rolling_maxdd'].plot(label='max_dd')
-        for i in range(0, len(self.ratios['max_dd_start'])):
-            ax1.axvline(self.ratios['max_dd_start'][i], linestyle='dashed', color=colors[i])
-            ax1.axvline(self.ratios['max_dd_end'][i], linestyle='dashed', color=colors[i])       
+        for i in range(0, len(max_drawdown_start)):
+            ax1.axvline(max_drawdown_start[i], linestyle='dashed', color=colors[i])
+            ax1.axvline(max_drawdown_end[i], linestyle='dashed', color=colors[i])       
         
         ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
@@ -327,10 +440,10 @@ class Analizer:
         return data.dropna()
 
     def get_returns_avg(self):
-        return self.data.mean()
+        return self.data.mean().values
 
     def get_returns_std(self):
-        return self.data.std()
+        return self.data.std().values
         
     def get_sharpe_ratio(self):
         returns = self.data.dropna()    
@@ -361,7 +474,7 @@ class Analizer:
         downside_risk = self.get_downside_risk(base_return)
         return sqrt(252)*(data.mean()/downside_risk.std()).values
         
-    def get_max_dd(self):
+    def get_max_dd_dates(self):
     
         balance = (1+self.data.dropna()).cumprod()      
         all_maxdrawdown = []
@@ -388,40 +501,116 @@ class Analizer:
                     maxdrawdown = drawdown
                     drawdownEnd = balance.index[i]
                     drawdownStart = previousHighDate 
-
-            all_maxdrawdown.append(maxdrawdown)
+                    
             all_drawdownStart.append(drawdownStart)
             all_drawdownEnd.append(drawdownEnd)
         
-        return all_drawdownStart, all_drawdownEnd, all_maxdrawdown
+        return all_drawdownStart, all_drawdownEnd
         
-    def get_average_dd(self):
+    def get_max_dd(self):
+        return [np.amax(x) for x in self.get_dd_period_depths()]
+           
+    def get_longest_dd_period(self):
+        return [np.amax(x) for x in self.get_dd_period_lengths()]
+        
+    def get_longest_recovery(self):
+        return [np.amax(x) for x in self.get_recovery_period_lengths()]
+    
+    def get_average_dd(self):     
+        return [np.mean(x) for x in self.get_dd_period_depths()]
+              
+    def get_average_dd_length(self):       
+        return [np.mean(x) for x in self.get_dd_period_lengths()]
+        
+    def get_average_recovery(self):
+        return [np.mean(x) for x in self.get_recovery_period_lengths()]
+              
+    def get_recovery_period_lengths(self):
+        balance = (1+self.data.dropna()).cumprod() 
+        all_recovery_periods = []     
+
+        for j in range(0, len(balance.columns)):
+        
+            all_recoveries = []
+            maxBalance = 1.0
+            drawdown = 0.0
+            bottom = 0.0
+            recoveryStart = balance.index[0]
+            
+            for i in range(0, len(balance.index)):
+                if balance.iloc[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                else:
+                    if drawdown != 0.0:
+                        recoveryEnd = balance.index[i]
+                        difference = recoveryEnd-recoveryStart
+                        all_recoveries.append(difference.days)
+                    drawdown = 0.0
+                    bottom = 0.0
+                    maxBalance = balance.iloc[i, j] 
+                if drawdown > bottom:
+                    bottom = drawdown
+                    recoveryStart = balance.index[i]
+                                                                    
+            all_recovery_periods.append(np.asarray(all_recoveries))
+        
+        return all_recovery_periods
+        
+    def get_dd_period_depths(self):
     
         balance = (1+self.data.dropna()).cumprod() 
-        all_average_drawdowns = []     
+        all_dd_period_depths = []     
 
         for j in range(0, len(balance.columns)):
         
             all_drawdowns = []
             maxBalance = 1.0
             drawdown = 0.0
-            drawdownbottom = 0.0
+            bottom = 0.0
             
             for i in range(0, len(balance.index)):
                 if balance.iloc[i, j] < maxBalance:
                     drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
                 else:
-                    if drawdownbottom != 0.0:
-                        all_drawdowns.append(drawdownbottom)
-                    drawdownbottom = 0.0
+                    if bottom != 0.0:
+                        all_drawdowns.append(bottom)
                     drawdown = 0.0
-                    maxBalance = balance.iloc[i, j]                       
-                if drawdown > drawdownbottom:
-                    drawdownbottom = drawdown
+                    bottom = 0.0
+                    maxBalance = balance.iloc[i, j]
+                if drawdown > bottom:
+                    bottom = drawdown                       
                                       
-            all_average_drawdowns.append(np.asarray(all_drawdowns).mean())
+            all_dd_period_depths.append(np.asarray(all_drawdowns))
         
-        return all_average_drawdowns
+        return all_dd_period_depths
+        
+    def get_dd_period_lengths(self):
+    
+        balance = (1+self.data.dropna()).cumprod() 
+        all_dd_period_lengths = []     
+
+        for j in range(0, len(balance.columns)):
+        
+            all_drawdown_lengths = []
+            drawdownStart = balance.index[0] 
+            maxBalance = 1.0
+            drawdown = 0.0
+            
+            for i in range(0, len(balance.index)):
+                if balance.iloc[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                else:
+                    if drawdown != 0.0:
+                        drawdownEnd = balance.index[i]
+                        difference = drawdownEnd-drawdownStart
+                        all_drawdown_lengths.append(difference.days)
+                    drawdown = 0.0
+                    drawdownStart = balance.index[i]              
+                    maxBalance = balance.iloc[i, j]                       
+                                      
+            all_dd_period_lengths.append(np.asarray(all_drawdown_lengths))
+        
+        return all_dd_period_lengths 
         
     def get_cagr(self):
         balance = (1+self.data.dropna()).cumprod()     
@@ -455,10 +644,10 @@ class Analizer:
         all_series = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            monthly_return = series.resample('W', how=lastValue).pct_change(fill_method='pad').dropna()
-            all_series.append(monthly_return)
-        monthly_returns = pd.concat(all_series, axis=1)
-        return monthly_returns 
+            weekly_return = series.resample('W', how=lastValue).pct_change(fill_method='pad').dropna()
+            all_series.append(weekly_return)
+        weekly_returns = pd.concat(all_series, axis=1)
+        return weekly_returns 
         
     def get_pearson_correlation(self):
         balance = (1+self.data.dropna()).cumprod()
@@ -475,9 +664,49 @@ class Analizer:
     
     def get_mar_ratio(self):
         cagr = self.get_cagr()
-        _, _, maximumdrawdown  = self.get_max_dd()
+        maximumdrawdown  = self.get_max_dd()
         mar_ratio = (cagr/maximumdrawdown)
         return mar_ratio
+        
+    def get_burke_ratio(self):
+        cagr = self.get_cagr()
+        all_burke_downside_risks = []
+        all_series_drawdowns = self.get_dd_period_depths()
+        
+        for all_drawdowns in all_series_drawdowns:
+            burke_downside_risk = 0.0
+            for drawdown in all_drawdowns:
+                burke_downside_risk += drawdown**2
+            burke_downside_risk = sqrt(burke_downside_risk)
+            all_burke_downside_risks.append(burke_downside_risk)
+                
+        burke_ratio = (cagr/all_burke_downside_risks)
+        return burke_ratio
+        
+    def get_ulcer_index(self):
+        balance = (1+self.data.dropna()).cumprod()
+        all_ulcer_index = []
+        
+        for i in range(0, len(balance.columns)):
+            series = pd.Series(balance.iloc[:,i])
+            weekly_balance = series.resample('W', how=lastValue)
+            sum_squares = 0.0
+            max_value = weekly_balance[0]
+            for value in weekly_balance:
+                if value > max_value:
+                    max_value = value
+                else:
+                    sum_squares = sum_squares + (100.0*((value/max_value)-1.0))**2
+                   
+            all_ulcer_index.append(sqrt(sum_squares/float(len(weekly_balance))))
+        
+        return all_ulcer_index
+    
+    def get_martin_ratio(self):
+        cagr = self.get_cagr()
+        ulcer_index  = self.get_ulcer_index()
+        martin_ratio = (cagr/ulcer_index)
+        return martin_ratio
         
             
             
