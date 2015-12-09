@@ -633,7 +633,7 @@ class Analizer:
             all_drawdownEnd.append(drawdownEnd)
         
         self.statistics['max drawdown start'] = all_drawdownStart
-        self.statistics['max drawdown end'] = all_drawdownStart
+        self.statistics['max drawdown end'] = all_drawdownEnd
         
         return self.statistics['max drawdown start'], self.statistics['max drawdown end']
         

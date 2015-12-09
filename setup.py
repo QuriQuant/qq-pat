@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='qqpat',
-      version='1.2',
+      version='1.21',
       description='Python Financial Performance Analysys Tool',
       classifiers=[
         'Development Status :: 3 - Alpha',
