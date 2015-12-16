@@ -24,7 +24,7 @@ def lastValue(x):
 
 class Analizer:
 
-    def __init__(self, df, column_type='return'):
+    def __init__(self, df, column_type='return', titles=None):
         
         if column_type == 'price':    
             all_series = []
@@ -37,7 +37,16 @@ class Analizer:
         elif column_type == 'return':
             self.data = pd.DataFrame(df)
         else:
-            raise ValueError('column_type \'{}\' not valid'.format(column_type))
+            raise ValueError('column_type \'{}\' not valid.'.format(column_type))
+            
+        self.use_titles = False
+        
+        if titles != None:
+            if len(titles) == len(self.data.columns):
+                self.data.columns = titles
+                self.use_titles = True
+            else:
+                raise ValueError('Number of titles is different from number of columns in data series.')    
 
         self.statistics = {}
         self.series = {}
@@ -212,12 +221,14 @@ class Analizer:
             
             labels_y = list(set(df['year']))
             labels_x = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                                  
-            fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+                    
+            fig = plt.figure(figsize=(7,6))              
+            ax = plt.subplot(1,1,1)
+            
             heatmap = ax.matshow(heatmap_data, aspect = 'auto', origin = 'lower', cmap ="RdYlGn")
             
             ax.set_yticks(np.arange(heatmap_data.shape[0]) + 0.5, minor=False)
-            ax.set_xticks(np.arange(heatmap_data.shape[1]) + 0.5, minor=False)
+            ax.set_xticks(np.arange(heatmap_data.shape[1]) + 0.5, minor=False)         
             
             ax.set_xticklabels(labels_x, minor=False)
             ax.set_yticklabels(labels_y, minor=False)
@@ -235,6 +246,10 @@ class Analizer:
                            
             ax.invert_yaxis()
             ax.xaxis.tick_top()
+            
+            if self.use_titles:
+                plt.text(0.5, 1.08, self.data.columns[i], horizontalalignment='center', fontsize=20, transform = ax.transAxes)        
+            
             plt.colorbar(heatmap)
             plt.xticks(rotation=90)
             plt.show()
@@ -258,6 +273,8 @@ class Analizer:
             
             ax.set_ylabel('Year Return (%)')
             ax.set_xlabel('Time')
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
               
             plt.xticks(rotation=90)
             plt.show()
@@ -265,13 +282,13 @@ class Analizer:
     def plot_drawdown_periods(self):
         
         all_drawdowns = self.get_dd_periods()
-        
-        for drawdowns in all_drawdowns:
+             
+        for j, drawdowns in enumerate(all_drawdowns):
                
             df = drawdowns                                               
             fig, ax = plt.subplots(figsize=(6,4), dpi=100)
                
-            ax.bar(df['dd_start'], df['dd_depth']*100) 
+            ax.bar(list(df['dd_start']), list(df['dd_depth']*100)) 
             ax.axhline(df['dd_depth'].values.mean(), linestyle='dashed', color='black', linewidth=1.5)
             
             for i in range(0, len(df.index)):
@@ -282,7 +299,10 @@ class Analizer:
                             )
             
             ax.set_ylabel('Drawdown depth (%)')
-            ax.set_xlabel('Time')
+            ax.set_xlabel('Time')    
+                  
+            if self.use_titles:
+                ax.set_title(self.data.columns[j])
               
             plt.show()
             
@@ -290,7 +310,7 @@ class Analizer:
         
         drawdowns = self.get_dd_period_depths()
         
-        for df in drawdowns:
+        for i, df in enumerate(drawdowns):
         
             fig, ax = plt.subplots(figsize=(10,7), dpi=100)
                
@@ -299,6 +319,9 @@ class Analizer:
                        
             ax.set_xlabel('Drawdowns (%)')
             ax.set_ylabel('Frequency')
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
             plt.show()
@@ -307,7 +330,7 @@ class Analizer:
         
         drawdowns = self.get_dd_period_lengths()
         
-        for df in drawdowns:
+        for i, df in enumerate(drawdowns):
         
             fig, ax = plt.subplots(figsize=(10,7), dpi=100)
                
@@ -316,6 +339,9 @@ class Analizer:
                        
             ax.set_xlabel('Drawdown length (days)')
             ax.set_ylabel('Frequency')
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
             plt.show()   
@@ -383,6 +409,9 @@ class Analizer:
             
             ax.set_ylabel('Month Return (%)')
             ax.set_xlabel('Time')
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
                            
             plt.xticks(rotation=90)
             plt.show()
@@ -405,6 +434,9 @@ class Analizer:
             
             ax.set_xlabel('Month Return (%)')
             ax.set_ylabel('Normalized Frequency')
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
             plt.show()
@@ -430,20 +462,30 @@ class Analizer:
         ax1.xaxis.set_ticklabels([])
         ax2.xaxis.set_ticklabels([])
         
-        color_cycle = ax1._get_lines.color_cycle
+        color_cycle = ax1._get_lines.prop_cycler
         colors = []
         
         for i, color in enumerate(color_cycle):
             if i<len(max_drawdown_start):
-                colors.append(color)
+                colors.append(color['color'])
             else:
                 break
                 
-        ax1.set_color_cycle(None)
-                
-        ax1.plot(balance.index, balance)      
+        ax1.set_prop_cycle(None)    
+        
+        print list(self.data.columns )
+        
+        for i, column in enumerate(balance.columns):  
+            if self.use_titles:                
+                ax1.plot(balance.index, balance[column], label=self.data.columns[i])   
+            else:
+                ax1.plot(balance.index, balance[column])       
+               
         ax2.plot(weeklyReturns.index, weeklyReturns)
         ax3.plot(underWaterSeries.index, underWaterSeries)
+        
+        if self.use_titles:
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol= 3, fancybox=True, shadow=True)
         
         ax3.set_xlabel('Time')
         ax1.set_ylabel('Cumulative return')
@@ -484,26 +526,35 @@ class Analizer:
         ax2 = plt.subplot2grid((12, 1), (4, 0), rowspan=3)
         ax3 = plt.subplot2grid((12, 1), (8, 0), rowspan=3)
         
-        color_cycle = ax1._get_lines.color_cycle
+        color_cycle = ax1._get_lines.prop_cycler
         colors = []
         
         for i, color in enumerate(color_cycle):
             if i<len(data.columns):
-                colors.append(color)
+                colors.append(color['color'])
             else:
                 break
                 
-        ax1.set_color_cycle(None)
+        ax1.set_prop_cycle(None)
              
         for axis in [ax1.xaxis, ax1.yaxis]:
             axis.set_major_formatter(ScalarFormatter())
         
         ax1.xaxis.set_ticklabels([])
-        ax2.xaxis.set_ticklabels([])    
+        ax2.xaxis.set_ticklabels([]) 
         
-        ax1.plot(rollingAnnualReturn.index, rollingAnnualReturn)     
+        for i, column in enumerate(rollingAnnualReturn.columns): 
+            if self.use_titles:                  
+                ax1.plot(rollingAnnualReturn.index, rollingAnnualReturn[column], label=self.data.columns[i]) 
+            else:
+                ax1.plot(rollingAnnualReturn.index, rollingAnnualReturn[column])   
+            
         ax2.plot(rollingAnnualSharpeRatio.index, rollingAnnualSharpeRatio)
         ax3.plot(rollingAnnualStandardDeviation.index, rollingAnnualStandardDeviation)
+        
+        if self.use_titles: 
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=3, fancybox=True, shadow=True)
+        
         
         ax3.set_xlabel('Time')
         ax1.set_ylabel(str(ROLLING_PLOT_PERIOD)+'M Return')

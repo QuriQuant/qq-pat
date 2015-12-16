@@ -17,7 +17,7 @@ ibm = data.get_data_yahoo('IBM',
 
 data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1)
 
-analyzer = qqpat.Analizer(data, column_type='price')
+analyzer = qqpat.Analizer(data, column_type='price', titles=["appl", "spy", "ibm"])
 
 analyzer.plot_analysis_returns()
 analyzer.plot_analysis_rolling()
