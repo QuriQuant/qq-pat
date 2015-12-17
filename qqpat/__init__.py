@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.41"
+__version__ = "1.411"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1158,6 +1158,20 @@ class Analizer:
             balance =(1+df).cumprod()        
             ax.plot(balance.index, balance)
         
+        plt.show()
+        
+    def plot_mc_distributions(self, index=0, iterations=100):
+                               
+        fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+        ax.set_xlabel('Returns (%)')
+        ax.set_ylabel('Frequency')
+        
+        for i in range(0, iterations):                
+            df = self.get_mc_simulation(index)*100
+            distribution = np.histogram(df[df.columns[0]].values, bins=20)
+            ax.plot(list(distribution[1][:-1]), list(distribution[0]))
+            ax.axvline(df[df.columns[0]].mean(), linestyle='dashed', color="black", linewidth=0.2)
+
         plt.show()
         
            
