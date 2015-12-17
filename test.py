@@ -22,6 +22,8 @@ analyzer = qqpat.Analizer(data, column_type='price', titles=["appl", "spy", "ibm
 print "Monte carlo statistics using 200 simulations for the first symbol"
 print analyzer.get_mc_statistics(index=0, iterations=200, confidence=99)
 
+analyzer.plot_mc_simulations(index=0, iterations=100)
+
 analyzer.plot_analysis_returns()
 analyzer.plot_analysis_rolling()
 analyzer.plot_monthly_returns_heatmap()

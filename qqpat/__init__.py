@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.4"
+__version__ = "1.41"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1144,8 +1144,23 @@ class Analizer:
         statistics = {'cagr': -np.percentile(cagr, confidence), 'max_dd': np.percentile(max_dd, confidence), 'sharpe': -np.percentile(sharpe, confidence)}
         
         return statistics
-                    
         
+    def plot_mc_simulations(self, index=0, iterations=100):
+                               
+        fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+        ax.set_yscale('log')
+        ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Cum Return') 
+        
+        for i in range(0, iterations):
+            df = self.get_mc_simulation(index)
+            balance =(1+df).cumprod()        
+            ax.plot(balance.index, balance)
+        
+        plt.show()
+        
+           
     
         
             
