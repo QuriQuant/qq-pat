@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.411"
+__version__ = "1.412"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -684,7 +684,7 @@ class Analizer:
             self.statistics['sharpe ratio'] = sqrt(252)*(returns.mean()/returns.std()).values   
         return sqrt(252)*(returns.mean()/returns.std()).values   
         
-    def get_downside_risk(self, base_return=0.0, input_df=None):
+    def get_downside_risk(self, base_return=0.0, input_df=None, external_df = False):
     
         if 'downside risk' in self.series and external_df == False:
             return self.series['downside risk']
@@ -714,7 +714,7 @@ class Analizer:
                  
         return result
         
-    def get_sortino_ratio(self, base_return=0.0, input_df=None):
+    def get_sortino_ratio(self, base_return=0.0, input_df=None, external_df = False):
         if 'sortino ratio' in self.statistics and external_df == False:
             return self.statistics['sortino ratio']
             
