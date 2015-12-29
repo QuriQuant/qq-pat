@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.412"
+__version__ = "1.45"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -240,7 +240,7 @@ class Analizer:
         
         return result
         
-    def plot_monthly_returns_heatmap(self):
+    def plot_monthly_returns_heatmap(self, saveToFile=""):
         
         returns = self.get_monthly_returns()
         
@@ -262,7 +262,7 @@ class Analizer:
             labels_y = list(set(df['year']))
             labels_x = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
                     
-            fig = plt.figure(figsize=(7,6))              
+            fig = plt.figure(figsize=(14,12))              
             ax = plt.subplot(1,1,1)
             
             heatmap = ax.matshow(heatmap_data, aspect = 'auto', origin = 'lower', cmap ="RdYlGn")
@@ -292,9 +292,13 @@ class Analizer:
             
             plt.colorbar(heatmap)
             plt.xticks(rotation=90)
-            plt.show()
             
-    def plot_annual_returns(self):
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+            
+    def plot_annual_returns(self, saveToFile=""):
         
         returns = self.get_annual_returns()
         
@@ -303,7 +307,7 @@ class Analizer:
             df = pd.DataFrame(returns.iloc[:,i]*100)
             df['year']= df.index.year
                                                    
-            fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+            fig, ax = plt.subplots(figsize=(12,8), dpi=100)
                
             ax.bar(df['year'].values, df[df.columns[0]].values, align="center") 
             ax.axhline(df[df.columns[0]].values.mean(), linestyle='dashed', color='black', linewidth=1.5)
@@ -317,22 +321,26 @@ class Analizer:
                 ax.set_title(self.data.columns[i])
               
             plt.xticks(rotation=90)
-            plt.show()
             
-    def plot_drawdown_periods(self):
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+            
+    def plot_drawdown_periods(self, saveToFile=""):
         
         all_drawdowns = self.get_dd_periods()
              
         for j, drawdowns in enumerate(all_drawdowns):
                
             df = drawdowns                                               
-            fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+            fig, ax = plt.subplots(figsize=(12,8), dpi=100)
                
             ax.bar(list(df['dd_start']), list(df['dd_depth']*100)) 
             ax.axhline(df['dd_depth'].values.mean(), linestyle='dashed', color='black', linewidth=1.5)
             
             for i in range(0, len(df.index)):
-                plt.text(df['dd_start'][i], df['dd_depth'][i]*100+2, '%d' % int(df['dd_length'][i]),
+                plt.text(df['dd_start'][i], df['dd_depth'][i]*100, '%d' % int(df['dd_length'][i]),
                             horizontalalignment='center',
                             verticalalignment='center',
                             size=6.0
@@ -344,15 +352,18 @@ class Analizer:
             if self.use_titles:
                 ax.set_title(self.data.columns[j])
               
-            plt.show()
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
             
-    def plot_drawdown_distribution(self):
+    def plot_drawdown_distribution(self, saveToFile=""):
         
         drawdowns = self.get_dd_period_depths()
         
         for i, df in enumerate(drawdowns):
         
-            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
             n, bins, patches = ax.hist(df*100, bins=15, alpha=0.75) 
             ax.axvline(df.mean(), linestyle='dashed', color="black")
@@ -364,15 +375,18 @@ class Analizer:
                 ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
-            plt.show()
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
      
-    def plot_drawdown_length_distribution(self):
+    def plot_drawdown_length_distribution(self, saveToFile=""):
         
         drawdowns = self.get_dd_period_lengths()
         
         for i, df in enumerate(drawdowns):
         
-            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
             n, bins, patches = ax.hist(df, bins=15, alpha=0.75) 
             ax.axvline(df.mean(), linestyle='dashed', color="black")
@@ -384,7 +398,35 @@ class Analizer:
                 ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
-            plt.show()   
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+    
+    def plot_correlation_heatmap(self, saveToFile=""):
+        
+        monthlyReturns = self.get_monthly_returns()
+        correlations = monthlyReturns.corr()
+                    
+        fig = plt.figure(figsize=(14,12))              
+        ax = plt.subplot(1,1,1)
+            
+        heatmap = ax.matshow(correlations, aspect = 'auto', origin = 'lower', cmap ="RdYlGn")
+        ax.invert_yaxis()
+        ax.xaxis.tick_top()
+        
+        for y in range(correlations.shape[0]):
+            for x in range(correlations.shape[1]):
+                plt.text(x, y, '%.2f' % correlations.iloc[y, x],
+                        horizontalalignment='center',
+                        verticalalignment='center',
+                        size=6.0
+                        )
+        
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
             
     def get_dd_periods(self, input_df = None, external_df = False):
     
@@ -437,7 +479,7 @@ class Analizer:
                 
         return all_dd_periods      
             
-    def plot_monthly_returns(self):
+    def plot_monthly_returns(self, saveToFile=""):
         
         returns = self.get_monthly_returns()
         
@@ -445,7 +487,7 @@ class Analizer:
                
             df = pd.Series(returns.iloc[:,i]*100)
                                                    
-            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
             ax.bar(df.index, df, 30, align="center") 
             ax.axhline(df.values.mean(), linestyle='dashed', color='black', linewidth=1.5)
@@ -459,9 +501,12 @@ class Analizer:
                 ax.set_title(self.data.columns[i])
                            
             plt.xticks(rotation=90)
-            plt.show()
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
             
-    def plot_monthly_return_distribution(self):
+    def plot_monthly_return_distribution(self, saveToFile=""):
         
         returns = self.get_monthly_returns()
         
@@ -469,7 +514,7 @@ class Analizer:
                
             df = pd.Series(returns.iloc[:,i]*100)
                                                    
-            fig, ax = plt.subplots(figsize=(10,7), dpi=100)
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
             n, bins, patches = ax.hist(df, bins=15, alpha=0.75, normed=True) 
             ax.axvline(df.mean(), linestyle='dashed', color="black")
@@ -484,9 +529,12 @@ class Analizer:
                 ax.set_title(self.data.columns[i])
              
             plt.xticks(rotation=90)
-            plt.show()
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
                  
-    def plot_analysis_returns(self):
+    def plot_analysis_returns(self, saveToFile=""):
         data = self.data.dropna()
         balance =(1+data).cumprod()
         weeklyReturns = self.get_weekly_returns()     
@@ -494,6 +542,8 @@ class Analizer:
         max_drawdown_start, max_drawdown_end  = self.get_max_dd_dates()
 
         underWaterSeries = self.get_underwater_data()
+        
+        fig = plt.figure(figsize=(10,10))
               
         ax1 = plt.subplot2grid((10, 1), (0, 0), rowspan=4)
         ax2 = plt.subplot2grid((10, 1), (5, 0), rowspan=2)
@@ -556,15 +606,20 @@ class Analizer:
         ax1.set_axisbelow(True)  
         
         plt.legend()
-        plt.show()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
         
-    def plot_analysis_rolling(self):
+    def plot_analysis_rolling(self, saveToFile=""):
         data = self.data.dropna()
         
         rollingAnnualReturn = self.get_rolling_return(ROLLING_PLOT_PERIOD)
         rollingAnnualSharpeRatio = self.get_rolling_sharpe_ratio(ROLLING_PLOT_PERIOD)
         rollingAnnualStandardDeviation = self.get_rolling_standard_deviation(ROLLING_PLOT_PERIOD)
                         
+        fig = plt.figure(figsize=(12,10))
+        
         ax1 = plt.subplot2grid((12, 1), (0, 0), rowspan=3)
         ax2 = plt.subplot2grid((12, 1), (4, 0), rowspan=3)
         ax3 = plt.subplot2grid((12, 1), (8, 0), rowspan=3)
@@ -625,7 +680,10 @@ class Analizer:
         ax1.set_axisbelow(True) 
               
         plt.legend()
-        plt.show()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
         
     def get_log_returns(self, input_df = None, external_df = False):
     
@@ -1145,9 +1203,9 @@ class Analizer:
         
         return statistics
         
-    def plot_mc_simulations(self, index=0, iterations=100):
+    def plot_mc_simulations(self, index=0, iterations=100, saveToFile=""):
                                
-        fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_yscale('log')
         ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax.set_xlabel('Time')
@@ -1158,11 +1216,14 @@ class Analizer:
             balance =(1+df).cumprod()        
             ax.plot(balance.index, balance)
         
-        plt.show()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
         
-    def plot_mc_distributions(self, index=0, iterations=100):
+    def plot_mc_distributions(self, index=0, iterations=100, saveToFile=""):
                                
-        fig, ax = plt.subplots(figsize=(6,4), dpi=100)
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_xlabel('Returns (%)')
         ax.set_ylabel('Frequency')
         
@@ -1172,7 +1233,10 @@ class Analizer:
             ax.plot(list(distribution[1][:-1]), list(distribution[0]))
             ax.axvline(df[df.columns[0]].mean(), linestyle='dashed', color="black", linewidth=0.2)
 
-        plt.show()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
         
            
     
