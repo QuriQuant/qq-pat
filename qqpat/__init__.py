@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.45"
+__version__ = "1.501"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
