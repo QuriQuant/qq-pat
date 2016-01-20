@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.501"
+__version__ = "1.502"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -75,6 +75,7 @@ class Analizer:
         all_longest_recovery        = self.get_longest_recovery(input_df)
         all_burke_ratio             = self.get_burke_ratio(input_df)
         all_ulcer_index             = self.get_ulcer_index(input_df)
+        all_martin_ratio            = self.get_martin_ratio(input_df)
         
         all_statistics = []
         
