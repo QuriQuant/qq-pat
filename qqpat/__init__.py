@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.502"
+__version__ = "1.503"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1156,7 +1156,7 @@ class Analizer:
             self.statistics['martin ratio'] = martin_ratio         
         return martin_ratio
         
-    def get_mc_simulation(self, index=0):
+    def get_mc_simulation(self, index=0, period_length=0):
     
         df = self.data.dropna()   
         distribution = np.histogram(df[df.columns[index]].values, bins=20)
@@ -1168,7 +1168,10 @@ class Analizer:
         
         simulated_returns = []
         
-        for i in range(0, len(df)):
+        if period_length == 0:
+            period_length = len(df)
+        
+        for i in range(0, period_length):
             random_selection = randint(0, np.asarray(distribution[0]).sum()*1000)
             
             for j in range(0, len(acc_prob)):
@@ -1180,18 +1183,18 @@ class Analizer:
             else:
                 simulated_returns.append(distribution[1][chosen_class])    
  
-        mc_df = pd.DataFrame(simulated_returns, index=df.index)
+        mc_df = pd.DataFrame(simulated_returns, index=df.index[:period_length])
         
         return mc_df
         
-    def get_mc_statistics(self, index=0, iterations=100, confidence=99):
+    def get_mc_statistics(self, index=0, iterations=100, confidence=99, period_length=0):
     
         cagr = []
         max_dd = []
         sharpe = []
         
         for i in range(0, iterations):
-            df = self.get_mc_simulation(index)
+            df = self.get_mc_simulation(index, period_length)
             cagr.append(-self.get_cagr(input_df = df, external_df = True))
             max_dd.append(self.get_max_dd(input_df = df, external_df = True))
             sharpe.append(-self.get_sharpe_ratio(input_df = df, external_df = True))
@@ -1216,6 +1219,48 @@ class Analizer:
             df = self.get_mc_simulation(index)
             balance =(1+df).cumprod()        
             ax.plot(balance.index, balance)
+        
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+            
+    def plot_mc_wc_evolution_sharpe(self, index=0, iterations=100, confidence=99, max_period_length=1000, saveToFile=""):
+                               
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+        ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax.set_xlabel('Period length (days)')
+        ax.set_ylabel('Worst case sharpe') 
+        sharpes = []
+        periods = []
+        
+        for i in range(1, int(max_period_length/100)):
+            stats = self.get_mc_statistics(index, iterations, confidence, i*100)
+            sharpes.append(stats['sharpe']) 
+            periods.append(i*100)   
+        
+        ax.plot(periods, sharpes)
+        
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+            
+    def plot_mc_wc_evolution_cagr(self, index=0, iterations=100, confidence=99, max_period_length=1000, saveToFile=""):
+                               
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+        ax.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax.set_xlabel('Period length (days)')
+        ax.set_ylabel('Worst case CAGR') 
+        cagrs = []
+        periods = []
+        
+        for i in range(1, int(max_period_length/100)):
+            stats = self.get_mc_statistics(index, iterations, confidence, i*100)
+            cagrs.append(stats['cagr']) 
+            periods.append(i*100)   
+        
+        ax.plot(periods, cagrs)
         
         if saveToFile == "":
             plt.show()

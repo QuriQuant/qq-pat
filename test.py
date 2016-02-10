@@ -22,6 +22,9 @@ analyzer = qqpat.Analizer(data, column_type='price', titles=["appl", "spy", "ibm
 print "Monte carlo statistics using 200 simulations for the first symbol"
 print analyzer.get_mc_statistics(index=0, iterations=200, confidence=99)
 
+analyzer.plot_mc_wc_evolution_sharpe(index=0, iterations=50, confidence=99, max_period_length=3000)
+analyzer.plot_mc_wc_evolution_cagr(index=0, iterations=50, confidence=99, max_period_length=3000)
+
 analyzer.plot_mc_distributions(index=0, iterations=100)
 analyzer.plot_mc_simulations(index=0, iterations=100)
 
