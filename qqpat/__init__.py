@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.503"
+__version__ = "1.504"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -57,25 +57,25 @@ class Analizer:
         if 'summary' in self.statistics and external_df == False:
             return self.statistics['summary']
     
-        all_win_ratio               = self.get_win_ratio(input_df) #
-        all_reward_to_risk          = self.get_reward_to_risk(input_df)
-        all_cagr                    = self.get_cagr(input_df)
-        all_sharpe_ratio            = self.get_sharpe_ratio(input_df)
-        all_sortino_ratio           = self.get_sortino_ratio(input_df)
-        all_mar_ratio               = self.get_mar_ratio(input_df)
-        all_average_return          = self.get_returns_avg(input_df)
-        all_stddev_return           = self.get_returns_std(input_df) 
-        all_average_dd              = self.get_average_dd(input_df)
-        all_profit_factor           = self.get_profit_factor(input_df)
-        all_pearson_correlation     = self.get_pearson_correlation(input_df)
-        all_max_drawdown            = self.get_max_dd(input_df)
-        all_average_dd_length       = self.get_average_dd_length(input_df)
-        all_longest_dd_period       = self.get_longest_dd_period(input_df)
-        all_average_recovery        = self.get_average_recovery(input_df)
-        all_longest_recovery        = self.get_longest_recovery(input_df)
-        all_burke_ratio             = self.get_burke_ratio(input_df)
-        all_ulcer_index             = self.get_ulcer_index(input_df)
-        all_martin_ratio            = self.get_martin_ratio(input_df)
+        all_win_ratio               = self.get_win_ratio(input_df, external_df) #
+        all_reward_to_risk          = self.get_reward_to_risk(input_df, external_df)
+        all_cagr                    = self.get_cagr(input_df, external_df)
+        all_sharpe_ratio            = self.get_sharpe_ratio(input_df, external_df)
+        all_sortino_ratio           = self.get_sortino_ratio(input_df, external_df)
+        all_mar_ratio               = self.get_mar_ratio(input_df, external_df)
+        all_average_return          = self.get_returns_avg(input_df, external_df)
+        all_stddev_return           = self.get_returns_std(input_df, external_df) 
+        all_average_dd              = self.get_average_dd(input_df, external_df)
+        all_profit_factor           = self.get_profit_factor(input_df, external_df)
+        all_pearson_correlation     = self.get_pearson_correlation(input_df, external_df)
+        all_max_drawdown            = self.get_max_dd(input_df, external_df)
+        all_average_dd_length       = self.get_average_dd_length(input_df, external_df)
+        all_longest_dd_period       = self.get_longest_dd_period(input_df, external_df)
+        all_average_recovery        = self.get_average_recovery(input_df, external_df)
+        all_longest_recovery        = self.get_longest_recovery(input_df, external_df)
+        all_burke_ratio             = self.get_burke_ratio(input_df, external_df)
+        all_ulcer_index             = self.get_ulcer_index(input_df, external_df)
+        all_martin_ratio            = self.get_martin_ratio(input_df, external_df)
         
         all_statistics = []
         
@@ -469,7 +469,14 @@ class Analizer:
                     drawdownStart = balance.index[i]              
                     maxBalance = balance.iloc[i, j]
                 if drawdown > bottom:
-                    bottom = drawdown                         
+                    bottom = drawdown  
+            
+            drawdownEnd = balance.index[-1]
+            difference = drawdownEnd-drawdownStart
+            all_drawdown_lengths.append(difference.days)
+            all_drawdown_depths.append(bottom)
+            all_drawdown_start.append(drawdownStart)
+            all_drawdown_end.append(drawdownEnd)                       
                         
             dd_periods_summary = {'dd_start': all_drawdown_start, 'dd_end': all_drawdown_end, 'dd_depth': all_drawdown_depths, 'dd_length': all_drawdown_lengths}                    
                                       
@@ -740,7 +747,8 @@ class Analizer:
             returns = input_df   
             
         if external_df == False:
-            self.statistics['sharpe ratio'] = sqrt(252)*(returns.mean()/returns.std()).values   
+            self.statistics['sharpe ratio'] = sqrt(252)*(returns.mean()/returns.std()).values 
+              
         return sqrt(252)*(returns.mean()/returns.std()).values   
         
     def get_downside_risk(self, base_return=0.0, input_df=None, external_df = False):
@@ -835,43 +843,43 @@ class Analizer:
         if 'max drawdown' in self.statistics and external_df == False:
             return self.statistics['max drawdown']
         if external_df == False:
-            self.statistics['max drawdown'] = [np.amax(x) for x in self.get_dd_period_depths(input_df)]
-        return  [np.amax(x) for x in self.get_dd_period_depths(input_df)]
+            self.statistics['max drawdown'] = [np.amax(x) for x in self.get_dd_period_depths(input_df, external_df)]
+        return  [np.amax(x) for x in self.get_dd_period_depths(input_df, external_df)]
            
     def get_longest_dd_period(self, input_df = None, external_df = False):
         if 'longest drawdown' in self.statistics and external_df == False:
             return self.statistics['longest drawdown']
         if external_df == False:
-            self.statistics['longest drawdown'] = [np.amax(x) for x in self.get_dd_period_lengths(input_df)]
-        return [np.amax(x) for x in self.get_dd_period_lengths(input_df)]
+            self.statistics['longest drawdown'] = [np.amax(x) for x in self.get_dd_period_lengths(input_df, external_df)]
+        return [np.amax(x) for x in self.get_dd_period_lengths(input_df, external_df)]
         
     def get_longest_recovery(self, input_df = None, external_df = False):
         if 'longest recovery' in self.statistics and external_df == False:
             return self.statistics['longest recovery']
         if external_df == False:
-            self.statistics['longest recovery'] = [np.amax(x) for x in self.get_recovery_period_lengths(input_df)]
-        return [np.amax(x) for x in self.get_recovery_period_lengths(input_df)]
+            self.statistics['longest recovery'] = [np.amax(x) for x in self.get_recovery_period_lengths(input_df, external_df)]
+        return [np.amax(x) for x in self.get_recovery_period_lengths(input_df, external_df)]
     
     def get_average_dd(self, input_df = None, external_df = False):     
         if 'average drawdown' in self.statistics and external_df == False:
             return self.statistics['average drawdown']
         if external_df == False:
-            self.statistics['average drawdown'] = [np.mean(x) for x in self.get_dd_period_depths(input_df)]
-        return [np.mean(x) for x in self.get_dd_period_depths(input_df)]
+            self.statistics['average drawdown'] = [np.mean(x) for x in self.get_dd_period_depths(input_df, external_df)]
+        return [np.mean(x) for x in self.get_dd_period_depths(input_df, external_df)]
               
     def get_average_dd_length(self, input_df = None, external_df = False):    
         if 'average drawdown length' in self.statistics and external_df == False:
             return self.statistics['average drawdown length']   
         if external_df == False:
-            self.statistics['average drawdown length'] = [np.mean(x) for x in self.get_dd_period_lengths(input_df)]
-        return [np.mean(x) for x in self.get_dd_period_lengths(input_df)]
+            self.statistics['average drawdown length'] = [np.mean(x) for x in self.get_dd_period_lengths(input_df, external_df)]
+        return [np.mean(x) for x in self.get_dd_period_lengths(input_df, external_df)]
         
     def get_average_recovery(self, input_df = None, external_df = False):
         if 'average recovery' in self.statistics and external_df == False:
             return self.statistics['average recovery'] 
         if external_df == False:     
-            self.statistics['average recovery'] = [np.mean(x) for x in self.get_recovery_period_lengths(input_df)] 
-        return [np.mean(x) for x in self.get_recovery_period_lengths(input_df)]  
+            self.statistics['average recovery'] = [np.mean(x) for x in self.get_recovery_period_lengths(input_df, external_df)] 
+        return [np.mean(x) for x in self.get_recovery_period_lengths(input_df, external_df)]  
               
     def get_recovery_period_lengths(self, input_df = None, external_df = False):
         
@@ -1092,8 +1100,8 @@ class Analizer:
     def get_mar_ratio(self, input_df = None, external_df = False):
         if 'mar ratio' in self.statistics and external_df == False:
             return self.statistics['mar ratio']   
-        cagr = self.get_cagr(input_df)
-        maximumdrawdown  = self.get_max_dd(input_df)
+        cagr = self.get_cagr(input_df, external_df)
+        maximumdrawdown  = self.get_max_dd(input_df, external_df)
         mar_ratio = (cagr/maximumdrawdown) 
         if external_df == False:
             self.statistics['mar_ratio'] = mar_ratio          
@@ -1102,9 +1110,9 @@ class Analizer:
     def get_burke_ratio(self, input_df = None, external_df = False):
         if 'burke ratio' in self.statistics and external_df == False:
             return self.statistics['burke ratio']   
-        cagr = self.get_cagr(input_df)
+        cagr = self.get_cagr(input_df, external_df)
         all_burke_downside_risks = []
-        all_series_drawdowns = self.get_dd_period_depths(input_df)
+        all_series_drawdowns = self.get_dd_period_depths(input_df, external_df)
         
         for all_drawdowns in all_series_drawdowns:
             burke_downside_risk = 0.0
@@ -1149,8 +1157,8 @@ class Analizer:
     def get_martin_ratio(self, input_df = None, external_df = False):
         if 'martin ratio' in self.statistics and external_df == False:
             return self.statistics['martin ratio']   
-        cagr = self.get_cagr(input_df)
-        ulcer_index  = self.get_ulcer_index(input_df)
+        cagr = self.get_cagr(input_df, external_df)
+        ulcer_index  = self.get_ulcer_index(input_df, external_df)
         martin_ratio = (cagr/ulcer_index)        
         if external_df == False:
             self.statistics['martin ratio'] = martin_ratio         
@@ -1158,32 +1166,23 @@ class Analizer:
         
     def get_mc_simulation(self, index=0, period_length=0):
     
-        df = self.data.dropna()   
-        distribution = np.histogram(df[df.columns[index]].values, bins=20)
-        random_hit = distribution[0]*1000
-        acc_prob = [0]
-        
-        for i in range(0, len(random_hit)):
-            acc_prob.append(acc_prob[i]+random_hit[i]) 
+           
+        dd_periods = self.get_dd_periods()[index]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        df = self.data[self.data.index < last_drawdown_start].dropna()
+        df_range = pd.bdate_range(df.index[0], df.index[-1])
+        df = df.reindex(df_range, fill_value=0)
         
         simulated_returns = []
         
         if period_length == 0:
-            period_length = len(df)
-        
+            period_length = len(df.index)
+            
         for i in range(0, period_length):
-            random_selection = randint(0, np.asarray(distribution[0]).sum()*1000)
-            
-            for j in range(0, len(acc_prob)):
-                if random_selection > acc_prob[j]:
-                    chosen_class = j
-            
-            if chosen_class < len(distribution[1]):
-                simulated_returns.append(distribution[1][chosen_class]+((distribution[1][chosen_class+1]-distribution[1][chosen_class])/100)*(randint(0,100))) 
-            else:
-                simulated_returns.append(distribution[1][chosen_class])    
+            random_selection = randint(0, len(df.index)-1)  
+            simulated_returns.append(df.iat[random_selection, 0])
  
-        mc_df = pd.DataFrame(simulated_returns, index=df.index[:period_length])
+        mc_df = pd.DataFrame(simulated_returns, index=df.index[:period_length])       
         
         return mc_df
         
@@ -1203,7 +1202,33 @@ class Analizer:
         max_dd = np.asarray(max_dd)
         sharpe = np.asarray(sharpe)
         
-        statistics = {'cagr': -np.percentile(cagr, confidence), 'max_dd': np.percentile(max_dd, confidence), 'sharpe': -np.percentile(sharpe, confidence)}
+        statistics = {'wc_cagr': -np.percentile(cagr, confidence), 'wc_max_dd': np.percentile(max_dd, confidence), 'wc_sharpe': -np.percentile(sharpe, confidence)}
+        
+        return statistics
+        
+    def get_mc_statistics_for_current_dd(self, index=0, iterations=100, confidence=99):
+    
+        mc_cagr = []
+        mc_sharpe = []
+        
+        dd_periods = self.get_dd_periods()[index]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        difference_in_days = (datetime.datetime.now()-last_drawdown_start).days
+        
+        for i in range(0, iterations):
+            df = self.get_mc_simulation(index, difference_in_days)
+            mc_cagr.append(-self.get_cagr(input_df = df, external_df = True)[0])
+            mc_sharpe.append(-self.get_sharpe_ratio(input_df = df, external_df = True)[0])
+            
+        wc_cagr = np.asarray(mc_cagr)
+        wc_sharpe = np.asarray(mc_sharpe)
+        
+        df1 = self.data[self.data.index > last_drawdown_start].dropna()
+        cagr = self.get_cagr(input_df = df1, external_df = True)[0]
+        balance =(1+df1).cumprod() 
+        sharpe = self.get_sharpe_ratio(input_df = df1, external_df = True)[0]
+                  
+        statistics = {'wc_cagr': -np.percentile(wc_cagr, confidence), 'wc_sharpe': -np.percentile(wc_sharpe, confidence), 'cagr':cagr, 'sharpe': sharpe}
         
         return statistics
         
@@ -1228,7 +1253,6 @@ class Analizer:
     def plot_mc_wc_evolution_sharpe(self, index=0, iterations=100, confidence=99, max_period_length=1000, saveToFile=""):
                                
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
-        ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax.set_xlabel('Period length (days)')
         ax.set_ylabel('Worst case sharpe') 
         sharpes = []
@@ -1272,12 +1296,16 @@ class Analizer:
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_xlabel('Returns (%)')
         ax.set_ylabel('Frequency')
-        
+            
         for i in range(0, iterations):                
             df = self.get_mc_simulation(index)*100
             distribution = np.histogram(df[df.columns[0]].values, bins=20)
             ax.plot(list(distribution[1][:-1]), list(distribution[0]))
             ax.axvline(df[df.columns[0]].mean(), linestyle='dashed', color="black", linewidth=0.2)
+            
+        df = self.data.dropna() *100
+        distribution = np.histogram(df[df.columns[0]].values, bins=20)
+        ax.plot(list(distribution[1][:-1]), list(distribution[0]), linewidth=5.0, color="black")
 
         if saveToFile == "":
             plt.show()
