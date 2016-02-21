@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.504"
+__version__ = "1.505"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1299,13 +1299,15 @@ class Analizer:
             
         for i in range(0, iterations):                
             df = self.get_mc_simulation(index)*100
-            distribution = np.histogram(df[df.columns[0]].values, bins=20)
+            df = df.loc[~(df==0).all(axis=1)]
+            distribution = np.histogram(df[df.columns[0]].values, bins=40)
             ax.plot(list(distribution[1][:-1]), list(distribution[0]))
             ax.axvline(df[df.columns[0]].mean(), linestyle='dashed', color="black", linewidth=0.2)
             
         df = self.data.dropna() *100
-        distribution = np.histogram(df[df.columns[0]].values, bins=20)
-        ax.plot(list(distribution[1][:-1]), list(distribution[0]), linewidth=5.0, color="black")
+        df = df.loc[~(df==0).all(axis=1)]
+        distribution = np.histogram(df[df.columns[0]].values, bins=40)
+        ax.plot(list(distribution[1][:-1]), list(distribution[0]), linewidth=3.0, color="black")
 
         if saveToFile == "":
             plt.show()
