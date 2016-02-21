@@ -1189,20 +1189,17 @@ class Analizer:
     def get_mc_statistics(self, index=0, iterations=100, confidence=99, period_length=0):
     
         cagr = []
-        max_dd = []
         sharpe = []
         
         for i in range(0, iterations):
             df = self.get_mc_simulation(index, period_length)
             cagr.append(-self.get_cagr(input_df = df, external_df = True))
-            max_dd.append(self.get_max_dd(input_df = df, external_df = True))
             sharpe.append(-self.get_sharpe_ratio(input_df = df, external_df = True))
             
         cagr = np.asarray(cagr)
-        max_dd = np.asarray(max_dd)
         sharpe = np.asarray(sharpe)
         
-        statistics = {'wc_cagr': -np.percentile(cagr, confidence), 'wc_max_dd': np.percentile(max_dd, confidence), 'wc_sharpe': -np.percentile(sharpe, confidence)}
+        statistics = {'wc_cagr': -np.percentile(cagr, confidence), 'wc_sharpe': -np.percentile(sharpe, confidence)}
         
         return statistics
         
