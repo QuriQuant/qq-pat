@@ -1257,7 +1257,7 @@ class Analizer:
         
         for i in range(1, int(max_period_length/100)):
             stats = self.get_mc_statistics(index, iterations, confidence, i*100)
-            sharpes.append(stats['sharpe']) 
+            sharpes.append(stats['wc_sharpe']) 
             periods.append(i*100)   
         
         ax.plot(periods, sharpes)
@@ -1278,7 +1278,7 @@ class Analizer:
         
         for i in range(1, int(max_period_length/100)):
             stats = self.get_mc_statistics(index, iterations, confidence, i*100)
-            cagrs.append(stats['cagr']) 
+            cagrs.append(stats['wc_cagr']) 
             periods.append(i*100)   
         
         ax.plot(periods, cagrs)
