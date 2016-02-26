@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.505"
+__version__ = "1.506"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1210,7 +1210,7 @@ class Analizer:
         
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
-        difference_in_days = (datetime.datetime.now()-last_drawdown_start).days
+        difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
         
         for i in range(0, iterations):
             df = self.get_mc_simulation(index, difference_in_days)
@@ -1241,6 +1241,53 @@ class Analizer:
             df = self.get_mc_simulation(index)
             balance =(1+df).cumprod()        
             ax.plot(balance.index, balance)
+        
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+            
+    def plot_mc_limits(self, index=0, iterations=100, saveToFile=""):
+    
+        dd_periods = self.get_dd_periods()[index]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
+                   
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+        ax.set_yscale('log')
+        ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Cum Return') 
+        
+        balance_real = (1+self.data.dropna()).cumprod()
+        last_balance = list(balance_real.loc[last_drawdown_start])[0]
+        index_limits = pd.bdate_range(last_drawdown_start, self.data.index[-1])
+        
+        best_balance = np.full(difference_in_days, last_balance)
+        worst_balance = np.full(difference_in_days, last_balance)
+        average_balance = np.full(difference_in_days, 0) 
+        average_balance[0] = last_balance
+                      
+        for i in range(0, iterations):
+            df = self.get_mc_simulation(index, difference_in_days)
+            balance =(1+df).cumprod()*last_balance
+            
+            for j in range(1,len(balance.index)):
+            
+                return_to_date = balance.iloc[j,0]-last_balance           
+                
+                if (last_balance+return_to_date) > best_balance[j]:
+                    best_balance[j] = (last_balance+return_to_date)      
+                                  
+                if (last_balance+return_to_date) < worst_balance[j]:
+                    worst_balance[j] = (last_balance+return_to_date)
+                
+                average_balance[j] += (last_balance+return_to_date) /iterations
+                  
+        ax.plot(balance_real.index, balance_real)
+        ax.plot(index_limits, best_balance)
+        ax.plot(index_limits, worst_balance)         
+        ax.plot(index_limits, average_balance)
         
         if saveToFile == "":
             plt.show()
