@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.506"
+__version__ = "1.507"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1247,7 +1247,7 @@ class Analizer:
         else:
             fig.savefig(saveToFile)
             
-    def plot_mc_limits(self, index=0, iterations=100, saveToFile=""):
+    def plot_mc_limits(self, index=0, iterations=100, confidence=99, saveToFile=""):
     
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
@@ -1263,8 +1263,16 @@ class Analizer:
         last_balance = list(balance_real.loc[last_drawdown_start])[0]
         index_limits = pd.bdate_range(last_drawdown_start, self.data.index[-1])
         
-        best_balance = np.full(difference_in_days, last_balance)
-        worst_balance = np.full(difference_in_days, last_balance)
+        best_balance = []
+        worst_balance = []
+        balances_per_day = []
+        
+        best_balance.append(last_balance)
+        worst_balance.append(last_balance)
+        
+        for j in range(0,difference_in_days):
+            balances_per_day.append([])    
+        
         average_balance = np.full(difference_in_days, 0) 
         average_balance[0] = last_balance
                       
@@ -1272,18 +1280,16 @@ class Analizer:
             df = self.get_mc_simulation(index, difference_in_days)
             balance =(1+df).cumprod()*last_balance
             
-            for j in range(1,len(balance.index)):
-            
-                return_to_date = balance.iloc[j,0]-last_balance           
-                
-                if (last_balance+return_to_date) > best_balance[j]:
-                    best_balance[j] = (last_balance+return_to_date)      
-                                  
-                if (last_balance+return_to_date) < worst_balance[j]:
-                    worst_balance[j] = (last_balance+return_to_date)
-                
+            for j in range(1,len(balance.index)):     
+                return_to_date = balance.iloc[j,0]-last_balance      
+                balances_per_day[j].append(last_balance+return_to_date)                                      
                 average_balance[j] += (last_balance+return_to_date) /iterations
-                  
+            
+        for j in range(1,difference_in_days):
+            balances_per_day[j] = np.asarray(balances_per_day[j])
+            best_balance.append(np.percentile(balances_per_day[j], confidence))  
+            worst_balance.append(-np.percentile(-balances_per_day[j], confidence))         
+                              
         ax.plot(balance_real.index, balance_real)
         ax.plot(index_limits, best_balance)
         ax.plot(index_limits, worst_balance)         
