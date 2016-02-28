@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.507"
+__version__ = "1.508"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1170,19 +1170,14 @@ class Analizer:
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         df = self.data[self.data.index < last_drawdown_start].dropna()
-        df_range = pd.bdate_range(df.index[0], df.index[-1])
-        df = df.reindex(df_range, fill_value=0)
         
         simulated_returns = []
         
         if period_length == 0:
             period_length = len(df.index)
             
-        for i in range(0, period_length):
-            random_selection = randint(0, len(df.index)-1)  
-            simulated_returns.append(df.iat[random_selection, 0])
- 
-        mc_df = pd.DataFrame(simulated_returns, index=df.index[:period_length])       
+        mc_df = df.sample(period_length, replace=True)
+        mc_df =  mc_df.set_index(df.index[:period_length])       
         
         return mc_df
         
@@ -1228,7 +1223,7 @@ class Analizer:
         statistics = {'wc_cagr': -np.percentile(wc_cagr, confidence), 'wc_sharpe': -np.percentile(wc_sharpe, confidence), 'cagr':cagr, 'sharpe': sharpe}
         
         return statistics
-        
+     
     def plot_mc_simulations(self, index=0, iterations=100, saveToFile=""):
                                
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
@@ -1246,7 +1241,7 @@ class Analizer:
             plt.show()
         else:
             fig.savefig(saveToFile)
-            
+           
     def plot_mc_limits(self, index=0, iterations=100, confidence=99, saveToFile=""):
     
         dd_periods = self.get_dd_periods()[index]
@@ -1261,39 +1256,28 @@ class Analizer:
         
         balance_real = (1+self.data.dropna()).cumprod()
         last_balance = list(balance_real.loc[last_drawdown_start])[0]
-        index_limits = pd.bdate_range(last_drawdown_start, self.data.index[-1])
-        
-        best_balance = []
-        worst_balance = []
-        balances_per_day = []
-        
-        best_balance.append(last_balance)
-        worst_balance.append(last_balance)
-        
-        for j in range(0,difference_in_days):
-            balances_per_day.append([])    
-        
-        average_balance = np.full(difference_in_days, 0) 
-        average_balance[0] = last_balance
+        index_limits = pd.bdate_range(last_drawdown_start, self.data.index[-1])                 
+                                    
+        for i in range(0, iterations): 
                       
-        for i in range(0, iterations):
-            df = self.get_mc_simulation(index, difference_in_days)
+            df = self.get_mc_simulation(index, difference_in_days)           
             balance =(1+df).cumprod()*last_balance
             
-            for j in range(1,len(balance.index)):     
-                return_to_date = balance.iloc[j,0]-last_balance      
-                balances_per_day[j].append(last_balance+return_to_date)                                      
-                average_balance[j] += (last_balance+return_to_date) /iterations
-            
-        for j in range(1,difference_in_days):
-            balances_per_day[j] = np.asarray(balances_per_day[j])
-            best_balance.append(np.percentile(balances_per_day[j], confidence))  
-            worst_balance.append(-np.percentile(-balances_per_day[j], confidence))         
+            if i == 0:
+                all_balances = balance
+            else:           
+                all_balances = pd.concat([all_balances, balance], axis=1)
+                    
+        all_balances = all_balances.transpose() 
+        average_balance = all_balances.mean(axis=0)
+        worst_balance = all_balances.quantile(q=confidence/100, axis=0)
+        all_balances = -all_balances
+        best_balance = -all_balances.quantile(q=confidence/100, axis=0)               
                               
         ax.plot(balance_real.index, balance_real)
-        ax.plot(index_limits, best_balance)
-        ax.plot(index_limits, worst_balance)         
-        ax.plot(index_limits, average_balance)
+        ax.plot(index_limits, best_balance, color="green")
+        ax.plot(index_limits, worst_balance, color="red")         
+        ax.plot(index_limits, average_balance, color="purple")
         
         if saveToFile == "":
             plt.show()
@@ -1363,9 +1347,4 @@ class Analizer:
             plt.show()
         else:
             fig.savefig(saveToFile)
-        
-           
-    
-        
-            
             
