@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.509"
+__version__ = "1.510"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -22,10 +22,23 @@ def lastValue(x):
     except:
         reply = None
     return reply
+    
 
 class Analizer:
 
+    """
+    Main class used for the analysis of financial time series 
+    """
+
     def __init__(self, df, column_type='return', titles=None):
+    
+        """
+        Initialization function creates the analyzer object used by class methods
+        it takes a pandas dataframe, and optional column_type and titles variables.
+        The column_type can be "return" or "price" depending on whether the 
+        input dataframe contains prices or returns. Titles contains a list of strings
+        to be assigned as dataframe titles.
+        """
         
         if column_type == 'price':    
             all_series = []
@@ -53,6 +66,11 @@ class Analizer:
         self.series = {}
         
     def get_statistics_summary(self, input_df = None, external_df = False):
+    
+        """
+        Returns a dictionary containing a summary of all basic statistics for all 
+        the columns within the input dataframe.
+        """
     
         if 'summary' in self.statistics and external_df == False:
             return self.statistics['summary']
@@ -109,6 +127,10 @@ class Analizer:
         
     def get_profit_factor(self, input_df = None, external_df = False):
     
+        """
+        Returns the profit factor for all input data columns.
+        """
+    
         if 'profit factor' in self.statistics and external_df == False:
             return self.statistics['profit factor']
         
@@ -128,6 +150,10 @@ class Analizer:
         return all_profit_factor
         
     def get_reward_to_risk(self, input_df = None, external_df = False):
+    
+        """
+        Returns the average reward to risk ratio for all input columns.   
+        """
     
         if 'reward to risk' in self.statistics and external_df == False:
             return self.statistics['reward to risk']
@@ -150,6 +176,10 @@ class Analizer:
             
     def get_win_ratio(self, input_df = None, external_df = False):
     
+        """
+        Returns the win ratio (percentage of returns that are positive) for all input columns.   
+        """
+    
         if 'win ratio' in self.statistics and external_df == False:
             return self.statistics['win ratio']
             
@@ -168,6 +198,13 @@ class Analizer:
         return all_win_ratio   
  
     def get_rolling_return(self, period, input_df = None, external_df = False):
+    
+        """
+        Calculates the 12 month rolling return for all input columns. 
+        Note that you can change this window by changing the ROLLING_PLOT_PERIOD
+        literal constant.  
+        """
+        
         if 'rolling return '+str(period) in self.series and external_df == False:
             return self.series['rolling return '+str(period)]
             
@@ -181,6 +218,13 @@ class Analizer:
         return pd.rolling_sum(data, int(period)).dropna()
             
     def get_rolling_sharpe_ratio(self, period, input_df = None, external_df = False):
+    
+        """
+        Calculates the 12 month rolling sharpe ratio for all input columns. 
+        Note that you can change this window by changing the ROLLING_PLOT_PERIOD
+        literal constant.  
+        """
+        
         if 'rolling sharpe ratio '+str(period) in self.series and external_df == False:
             return self.series['rolling sharpe ratio '+str(period)]
             
@@ -196,6 +240,13 @@ class Analizer:
         return sqrt(12)*(rolling_mean/rolling_std).dropna()
         
     def get_rolling_standard_deviation(self, period, input_df = None, external_df = False):
+    
+        """
+        Calculates the 12 month rolling standard deviation for all input columns. 
+        Note that you can change this window by changing the ROLLING_PLOT_PERIOD
+        literal constant.  
+        """
+    
         if 'rolling stddev '+str(period) in self.series and external_df == False:
             return self.series['rolling stddev '+str(period)]
             
@@ -209,6 +260,12 @@ class Analizer:
         return pd.rolling_std(data, int(period)).dropna()
                    
     def get_underwater_data(self, input_df = None, external_df = False):
+    
+        """
+        Calculates the underwater plot for all input columns. The underwater
+        plot has a value of 0 whenever the time series is outside of a drawdown
+        period and goes below zero whenever a drawdown is in progress.  
+        """
     
         if 'underwater' in self.series and external_df == False:
             return self.series['underwater']
@@ -242,6 +299,13 @@ class Analizer:
         return result
         
     def plot_monthly_returns_heatmap(self, saveToFile=""):
+    
+        """
+        Plots a heatmap showing the monthly return series. Note that 
+        the color scaling is automatic and goes from dark green for the most positive
+        to dark red for the most negative. Note that no particular distinction is made
+        to make positive values green and/or negative values red. 
+        """
         
         returns = self.get_monthly_returns()
         
@@ -300,6 +364,11 @@ class Analizer:
                 fig.savefig(saveToFile)
             
     def plot_annual_returns(self, saveToFile=""):
+    
+        """
+        Plots annual returns as well as the mean annual return as
+        a horizontal dashed black line.
+        """
         
         returns = self.get_annual_returns()
         
@@ -329,6 +398,11 @@ class Analizer:
                 fig.savefig(saveToFile)
             
     def plot_drawdown_periods(self, saveToFile=""):
+    
+        """
+        Plots all drawdown periods as a function of time.
+        The plot also shows each drawdown period's length.
+        """
         
         all_drawdowns = self.get_dd_periods()
              
@@ -359,6 +433,11 @@ class Analizer:
                 fig.savefig(saveToFile)
             
     def plot_drawdown_distribution(self, saveToFile=""):
+    
+        """
+        Plots a distribution of drawdown period depths.
+        The plot always uses 15 bins.
+        """
         
         drawdowns = self.get_dd_period_depths()
         
@@ -382,6 +461,11 @@ class Analizer:
                 fig.savefig(saveToFile)
      
     def plot_drawdown_length_distribution(self, saveToFile=""):
+    
+        """
+        Plots a distribution of drawdown period lengths.
+        The plot always uses 15 bins.
+        """
         
         drawdowns = self.get_dd_period_lengths()
         
@@ -405,6 +489,11 @@ class Analizer:
                 fig.savefig(saveToFile)
     
     def plot_correlation_heatmap(self, saveToFile=""):
+    
+        """
+        Plots a correlation heatmap showing the correlations
+        between the different input columns. 
+        """
         
         monthlyReturns = self.get_monthly_returns()
         correlations = monthlyReturns.corr()
@@ -430,6 +519,12 @@ class Analizer:
             fig.savefig(saveToFile)
             
     def get_dd_periods(self, input_df = None, external_df = False):
+    
+        """
+        Gets all drawdown periods as a dictionary containing drawdown
+        period start, drawdown period end, drawdown depth and drawdown
+        length for all input data columsn. 
+        """
     
         if 'drawdown periods' in self.series and external_df == False:
             return self.series['drawdown periods']
@@ -489,6 +584,11 @@ class Analizer:
         return all_dd_periods      
             
     def plot_monthly_returns(self, saveToFile=""):
+    
+        """
+        Plots monthly returns. The mean monthly return is also
+        plotted as a black dashed horizontal line.
+        """
         
         returns = self.get_monthly_returns()
         
@@ -516,6 +616,12 @@ class Analizer:
                 fig.savefig(saveToFile)
             
     def plot_monthly_return_distribution(self, saveToFile=""):
+    
+        """
+        Plots monthly return distribution. The mean monthly return is also
+        plotted as a black dashed vertical line. The distribution uses
+        15 bins.
+        """
         
         returns = self.get_monthly_returns()
         
@@ -544,6 +650,15 @@ class Analizer:
                 fig.savefig(saveToFile)
                  
     def plot_analysis_returns(self, saveToFile=""):
+    
+        """
+        Plots the cumulative return, the underwater plot and
+        the weekly returns on a single graph. This plot
+        is similar to the PerformanceAnalytics R library summary plot.
+        In addition the plot also includes lines to highlight 
+        the deepest drawdown periods for all loaded time series.
+        """
+    
         data = self.data.dropna()
         balance =(1+data).cumprod()
         weeklyReturns = self.get_weekly_returns()     
@@ -621,6 +736,13 @@ class Analizer:
             fig.savefig(saveToFile)
         
     def plot_analysis_rolling(self, saveToFile=""):
+    
+        """
+        Plots the 12 month rolling return, sharpe ratio and standard deviation.
+        This is similar to the rolling performance summary plot available in
+        the PerformanceAnalytics R library.
+        """
+        
         data = self.data.dropna()
         
         rollingAnnualReturn = self.get_rolling_return(ROLLING_PLOT_PERIOD)
@@ -696,6 +818,11 @@ class Analizer:
         
     def get_log_returns(self, input_df = None, external_df = False):
     
+        """
+        Returns a dataframe containing the logarithmic returns for all
+        input time series.
+        """
+    
         if 'log returns' in self.series and external_df == False:
             return self.series['log returns']
             
@@ -713,6 +840,11 @@ class Analizer:
         return data
 
     def get_returns_avg(self, input_df = None, external_df = False):
+    
+        """
+        Returns the mean return value for all input time series.
+        """
+    
         if 'average return' in self.statistics and external_df == False:
             return self.statistics['average return']
             
@@ -726,6 +858,11 @@ class Analizer:
         return data.mean().values
 
     def get_returns_std(self, input_df = None, external_df = False):
+    
+        """
+        Returns the standard deviation of returns for all input time series.
+        """
+    
         if 'stddev returns' in self.statistics and external_df == False:
             return self.statistics['stddev returns']
             
@@ -739,6 +876,13 @@ class Analizer:
         return data.std().values
         
     def get_sharpe_ratio(self, input_df = None, external_df = False):
+    
+        """
+        Returns the sharpe ratio for all input time series. Note that
+        the library assumes that the reference risk free return is zero
+        which is common practice.
+        """
+    
         if 'sharpe ratio' in self.statistics and external_df == False:
             return self.statistics['sharpe ratio']
             
@@ -753,6 +897,10 @@ class Analizer:
         return sqrt(252)*(returns.mean()/returns.std()).values   
         
     def get_downside_risk(self, base_return=0.0, input_df=None, external_df = False):
+    
+        """
+        Returns the downside risk for all input time series.
+        """
     
         if 'downside risk' in self.series and external_df == False:
             return self.series['downside risk']
@@ -783,6 +931,11 @@ class Analizer:
         return result
         
     def get_sortino_ratio(self, base_return=0.0, input_df=None, external_df = False):
+    
+        """
+        Returns the sortino ratio for all input time series.
+        """
+    
         if 'sortino ratio' in self.statistics and external_df == False:
             return self.statistics['sortino ratio']
             
@@ -797,6 +950,10 @@ class Analizer:
         return self.statistics['sortino ratio']
         
     def get_max_dd_dates(self, input_df = None, external_df = False):
+    
+        """
+        Returns the max drawdown starting and ending dates for all input series.
+        """
     
         if ('max drawdown start' in self.statistics and external_df == False) and ('max drawdown end' in self.statistics and external_df == False):
             return self.statistics['max drawdown start'], self.statistics['max drawdown end']    
@@ -841,6 +998,11 @@ class Analizer:
         return all_drawdownStart, all_drawdownEnd
         
     def get_max_dd(self, input_df = None, external_df = False):
+    
+        """
+        Returns the max drawdown value for all input time series.
+        """
+    
         if 'max drawdown' in self.statistics and external_df == False:
             return self.statistics['max drawdown']
         if external_df == False:
@@ -848,6 +1010,11 @@ class Analizer:
         return  [np.amax(x) for x in self.get_dd_period_depths(input_df, external_df)]
            
     def get_longest_dd_period(self, input_df = None, external_df = False):
+    
+        """
+        Returns the longest drawdown period value in days for all input time series.
+        """
+    
         if 'longest drawdown' in self.statistics and external_df == False:
             return self.statistics['longest drawdown']
         if external_df == False:
@@ -855,6 +1022,11 @@ class Analizer:
         return [np.amax(x) for x in self.get_dd_period_lengths(input_df, external_df)]
         
     def get_longest_recovery(self, input_df = None, external_df = False):
+    
+        """
+        Returns the longest drawdown period recovery value in days for all input time series.
+        """
+    
         if 'longest recovery' in self.statistics and external_df == False:
             return self.statistics['longest recovery']
         if external_df == False:
@@ -862,6 +1034,11 @@ class Analizer:
         return [np.amax(x) for x in self.get_recovery_period_lengths(input_df, external_df)]
     
     def get_average_dd(self, input_df = None, external_df = False):     
+    
+        """
+        Returns the average drawdown period depth value for all input time series.
+        """
+    
         if 'average drawdown' in self.statistics and external_df == False:
             return self.statistics['average drawdown']
         if external_df == False:
@@ -869,6 +1046,11 @@ class Analizer:
         return [np.mean(x) for x in self.get_dd_period_depths(input_df, external_df)]
               
     def get_average_dd_length(self, input_df = None, external_df = False):    
+    
+        """
+        Returns the average drawdown period length value in days for all input time series.
+        """
+    
         if 'average drawdown length' in self.statistics and external_df == False:
             return self.statistics['average drawdown length']   
         if external_df == False:
@@ -876,6 +1058,11 @@ class Analizer:
         return [np.mean(x) for x in self.get_dd_period_lengths(input_df, external_df)]
         
     def get_average_recovery(self, input_df = None, external_df = False):
+    
+        """
+        Returns the average drawdown period recovery length in days for all input time series.
+        """
+    
         if 'average recovery' in self.statistics and external_df == False:
             return self.statistics['average recovery'] 
         if external_df == False:     
@@ -883,6 +1070,10 @@ class Analizer:
         return [np.mean(x) for x in self.get_recovery_period_lengths(input_df, external_df)]  
               
     def get_recovery_period_lengths(self, input_df = None, external_df = False):
+    
+        """
+        Returns all recovery period lengths in days for all input time series.
+        """
         
         if 'recovery lengths' in self.series and external_df == False:
             return self.series['recovery lengths']
@@ -926,6 +1117,10 @@ class Analizer:
         
     def get_dd_period_depths(self, input_df = None, external_df = False):
     
+        """
+        Returns all drawdown period depths for all input time series.
+        """
+    
         if 'drawdown depths' in self.series and external_df == False:
             return self.series['drawdown depths']
     
@@ -966,6 +1161,10 @@ class Analizer:
         return all_dd_period_depths
         
     def get_dd_period_lengths(self, input_df = None, external_df = False):
+    
+        """
+        Returns all drawdown period lengths in days for all input time series.
+        """
     
         if 'drawdown lengths' in self.series and external_df == False:
             return self.series['drawdown lengths']
@@ -1012,6 +1211,12 @@ class Analizer:
         return all_dd_period_lengths 
         
     def get_cagr(self, input_df = None, external_df = False):
+    
+        """
+        Returns the Compounded Aannual Growth Rate (CAGR) for all input series .
+        http://www.investopedia.com/terms/c/cagr.asp
+        """
+        
         if 'cagr' in self.statistics and external_df == False:
             return self.statistics['cagr']   
         
@@ -1028,6 +1233,11 @@ class Analizer:
         return cagr[0]
         
     def get_annual_returns(self, input_df = None, external_df = False):
+    
+        """
+        Returns the annual returns for all the input time series.
+        """
+    
         if 'annual returns' in self.series and external_df == False:
             return self.series['annual returns']
         
@@ -1047,6 +1257,11 @@ class Analizer:
         return annual_returns 
         
     def get_monthly_returns(self, input_df = None, external_df = False):
+    
+        """
+        Returns the monthly returns for all the input time series.
+        """
+    
         if 'monthly returns' in self.series and external_df == False:
             return self.series['monthly returns']
        
@@ -1066,6 +1281,11 @@ class Analizer:
         return monthly_returns 
         
     def get_weekly_returns(self, input_df = None, external_df = False):
+        
+        """
+        Returns the weekly returns for all the input time series.
+        """
+        
         if 'weekly returns' in self.series and external_df == False:
             return self.series['weekly returns']
         
@@ -1085,6 +1305,11 @@ class Analizer:
         return weekly_returns 
         
     def get_pearson_correlation(self, input_df = None, external_df = False):
+    
+        """
+        Returns the pearson correlation coefficient (R) for all input time series.
+        """
+    
         if 'pearson correlation' in self.statistics and external_df == False:
             return self.statistics['pearson correlation']   
         
@@ -1107,6 +1332,11 @@ class Analizer:
         return all_r_values
     
     def get_mar_ratio(self, input_df = None, external_df = False):
+    
+        """
+        Returns the MAR ratio for all the input time series.
+        """
+        
         if 'mar ratio' in self.statistics and external_df == False:
             return self.statistics['mar ratio']   
         cagr = self.get_cagr(input_df, external_df)
@@ -1117,6 +1347,11 @@ class Analizer:
         return mar_ratio
         
     def get_burke_ratio(self, input_df = None, external_df = False):
+    
+        """
+        Returns the burke ratio for all the input time series.
+        """
+    
         if 'burke ratio' in self.statistics and external_df == False:
             return self.statistics['burke ratio']   
         cagr = self.get_cagr(input_df, external_df)
@@ -1136,6 +1371,11 @@ class Analizer:
         return burke_ratio
         
     def get_ulcer_index(self, input_df = None, external_df = False):
+    
+        """
+        Returns the Ulcer Index for all the input time series.
+        """
+        
         if 'ulcer index' in self.statistics and external_df == False:
             return self.statistics['ulcer index']   
             
@@ -1164,6 +1404,11 @@ class Analizer:
         return all_ulcer_index
     
     def get_martin_ratio(self, input_df = None, external_df = False):
+        
+        """
+        Returns the martin ratio for all the input time series.
+        """
+        
         if 'martin ratio' in self.statistics and external_df == False:
             return self.statistics['martin ratio']   
         cagr = self.get_cagr(input_df, external_df)
@@ -1175,6 +1420,11 @@ class Analizer:
         
     def get_mc_simulation(self, index=0, period_length=0):
     
+        """
+        Returns a dataframe containing the returns of a Monte Carlo simulation of the specified length
+        using the return data for the specified input data index. The default period length (0) performs a 
+        simulation of the same length as the original data series.
+        """
            
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].ix[-1]
@@ -1192,6 +1442,11 @@ class Analizer:
         
     def get_mc_statistics(self, index=0, iterations=100, confidence=99, period_length=0):
     
+        """
+        Returns the CAGR and Sharpe for a Monte Carlo simulation with a defined number of iteration
+        at a defined confidence and length interval. 
+        """
+    
         cagr = []
         sharpe = []
         
@@ -1208,6 +1463,13 @@ class Analizer:
         return statistics
         
     def get_mc_statistics_for_current_dd(self, index=0, iterations=100, confidence=99):
+    
+        """
+        Returns the CAGR and sharpe statistics resulting from a Monte Carlo simulations 
+        for a given number of iterations at a given confidence for a simulation length
+        equal to the selected time series' last drawdown period. The selected time
+        series is specified via the index parameter. 
+        """
     
         mc_cagr = []
         mc_sharpe = []
@@ -1234,6 +1496,11 @@ class Analizer:
         return statistics
      
     def plot_mc_simulations(self, index=0, iterations=100, saveToFile=""):
+    
+        """
+        Plots the cumulative return curves of a selected number of Monte Carlo
+        simulation iterations.
+        """
                                
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_yscale('log')
@@ -1252,6 +1519,12 @@ class Analizer:
             fig.savefig(saveToFile)
            
     def plot_mc_limits(self, index=0, iterations=100, confidence=99, saveToFile=""):
+    
+        """
+        Plots the system's cumulative return curve plus the upper and lower boundaries for balance
+        values obtained from a defined number of Monte Carlo iterations at a defined 
+        confidence interval for the last drawdown period.
+        """
     
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].ix[-1]
@@ -1295,6 +1568,12 @@ class Analizer:
             
     def plot_mc_wc_evolution_sharpe(self, index=0, iterations=100, confidence=99, max_period_length=1000, saveToFile=""):
                                
+        """
+        Plots the evolution of the sharpe ratio calculated using a certain number of Monte Carlo simulation
+        iterations at a given confidence interval for period length going from 100 to max_period_length
+        in 100 period increments.
+        """
+        
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_xlabel('Period length (days)')
         ax.set_ylabel('Worst case sharpe') 
@@ -1314,6 +1593,12 @@ class Analizer:
             fig.savefig(saveToFile)
             
     def plot_mc_wc_evolution_cagr(self, index=0, iterations=100, confidence=99, max_period_length=1000, saveToFile=""):
+    
+        """
+        Plots the evolution of the cagr ratio calculated using a certain number of Monte Carlo simulation
+        iterations at a given confidence interval for period length going from 100 to max_period_length
+        in 100 period increments.
+        """
                                
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
@@ -1335,6 +1620,12 @@ class Analizer:
             fig.savefig(saveToFile)
         
     def plot_mc_distributions(self, index=0, iterations=100, saveToFile=""):
+    
+        """
+        Plots the distribution of returns of a requested number of Monte Carlo simulation
+        iterations. The distribution of the original series is also plotted using a thicker black
+        line.
+        """
                                
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
         ax.set_xlabel('Returns (%)')

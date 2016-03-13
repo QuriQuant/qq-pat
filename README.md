@@ -15,3 +15,5 @@ analyzer.plot_analysis_returns()
 ```
 
 See the test.py file for a test showing you how to obtain different statistics of a group of three different stocks/ETFs. 
+
+Use the "pydoc -w qqpat" command to generate an htm containing all function definitions available within the library plus relevant comments. 
