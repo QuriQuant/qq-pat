@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.508"
+__version__ = "1.509"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -31,7 +31,7 @@ class Analizer:
             all_series = []
             df = pd.DataFrame(df)
             for i in range(0, len(df.columns)):
-                series = pd.Series(df.iloc[:,i])
+                series = pd.Series(df.ix[:,i])
                 returns = series.pct_change(fill_method='pad')
                 all_series.append(returns)
             self.data = pd.concat(all_series, axis=1)             
@@ -119,7 +119,7 @@ class Analizer:
             
         all_profit_factor = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.iloc[:,i]).dropna()     
+            df = pd.Series(data.ix[:,i]).dropna()     
             profit_factor = df[df > 0].sum()/abs(df[df < 0].sum()) 
             all_profit_factor.append(profit_factor)
         
@@ -139,7 +139,7 @@ class Analizer:
           
         all_reward_to_risk = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.iloc[:,i]).dropna()     
+            df = pd.Series(data.ix[:,i]).dropna()     
             reward_to_risk = df[df > 0].mean()/abs(df[df < 0].mean()) 
             all_reward_to_risk.append(reward_to_risk)
         
@@ -160,7 +160,7 @@ class Analizer:
             
         all_win_ratio = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.iloc[:,i]).dropna()     
+            df = pd.Series(data.ix[:,i]).dropna()     
             win_ratio = float(len(df[df > 0]))/float(len(df))
             all_win_ratio.append(win_ratio)
         if external_df == False:    
@@ -225,11 +225,11 @@ class Analizer:
             underWaterData = []
             maxBalance = 1.0
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance
                 else:
                     drawdown = 0
-                    maxBalance = balance.iloc[i, j]
+                    maxBalance = balance.ix[i, j]
                 underWaterData.append(0-1*drawdown)
             all_underWaterData.append(pd.DataFrame(data=underWaterData, index=balance.index))
         
@@ -247,7 +247,7 @@ class Analizer:
         
         for i in range(0, len(returns.columns)):
                
-            df = pd.DataFrame(returns.iloc[:,i]*100)
+            df = pd.DataFrame(returns.ix[:,i]*100)
             df['month']= df.index.month
             df['year']= df.index.year
             
@@ -276,7 +276,7 @@ class Analizer:
             
             for y in range(heatmap_data.shape[0]):
                 for x in range(heatmap_data.shape[1]):
-                    plt.text(x, y, '%.2f' % heatmap_data.iloc[y, x],
+                    plt.text(x, y, '%.2f' % heatmap_data.ix[y, x],
                             horizontalalignment='center',
                             verticalalignment='center',
                             size=6.0
@@ -305,7 +305,7 @@ class Analizer:
         
         for i in range(0, len(returns.columns)):
                
-            df = pd.DataFrame(returns.iloc[:,i]*100)
+            df = pd.DataFrame(returns.ix[:,i]*100)
             df['year']= df.index.year
                                                    
             fig, ax = plt.subplots(figsize=(12,8), dpi=100)
@@ -418,7 +418,7 @@ class Analizer:
         
         for y in range(correlations.shape[0]):
             for x in range(correlations.shape[1]):
-                plt.text(x, y, '%.2f' % correlations.iloc[y, x],
+                plt.text(x, y, '%.2f' % correlations.ix[y, x],
                         horizontalalignment='center',
                         verticalalignment='center',
                         size=6.0
@@ -440,7 +440,7 @@ class Analizer:
             balance = (1+input_df).cumprod() 
              
         all_dd_periods = []
-
+        
         for j in range(0, len(balance.columns)):
         
             all_drawdown_lengths = []
@@ -454,8 +454,8 @@ class Analizer:
             bottom = 0.0
             
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
                 else:
                     if bottom > 0.0:
                         drawdownEnd = balance.index[i]
@@ -467,24 +467,25 @@ class Analizer:
                     drawdown = 0.0                  
                     bottom = 0.0
                     drawdownStart = balance.index[i]              
-                    maxBalance = balance.iloc[i, j]
+                    maxBalance = balance.ix[i, j]
                 if drawdown > bottom:
                     bottom = drawdown  
             
-            drawdownEnd = balance.index[-1]
-            difference = drawdownEnd-drawdownStart
-            all_drawdown_lengths.append(difference.days)
-            all_drawdown_depths.append(bottom)
-            all_drawdown_start.append(drawdownStart)
-            all_drawdown_end.append(drawdownEnd)                       
+            if bottom > 0.0:
+                drawdownEnd = balance.index[-1]
+                difference = drawdownEnd-drawdownStart
+                all_drawdown_lengths.append(difference.days)
+                all_drawdown_depths.append(bottom)
+                all_drawdown_start.append(drawdownStart)
+                all_drawdown_end.append(drawdownEnd)                       
                         
-            dd_periods_summary = {'dd_start': all_drawdown_start, 'dd_end': all_drawdown_end, 'dd_depth': all_drawdown_depths, 'dd_length': all_drawdown_lengths}                    
-                                      
+            dd_periods_summary = {'dd_start': all_drawdown_start, 'dd_end': all_drawdown_end, 'dd_depth': all_drawdown_depths, 'dd_length': all_drawdown_lengths}   
+                                                                        
             all_dd_periods.append(pd.DataFrame.from_dict(dd_periods_summary))
          
         if external_df == False:    
             self.series['drawdown periods'] = all_dd_periods 
-                
+                          
         return all_dd_periods      
             
     def plot_monthly_returns(self, saveToFile=""):
@@ -493,7 +494,7 @@ class Analizer:
         
         for i in range(0, len(returns.columns)):
                
-            df = pd.Series(returns.iloc[:,i]*100)
+            df = pd.Series(returns.ix[:,i]*100)
                                                    
             fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
@@ -520,7 +521,7 @@ class Analizer:
         
         for i in range(0, len(returns.columns)):
                
-            df = pd.Series(returns.iloc[:,i]*100)
+            df = pd.Series(returns.ix[:,i]*100)
                                                    
             fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
@@ -672,9 +673,9 @@ class Analizer:
         ax3.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
         
         for i in range(0, len(data.columns)):
-            ax1.axhline(rollingAnnualReturn.iloc[:,i].mean(), linestyle='dashed', color=colors[i])
-            ax2.axhline(rollingAnnualSharpeRatio.iloc[:,i].mean(), linestyle='dashed', color=colors[i])
-            ax3.axhline(rollingAnnualStandardDeviation.iloc[:,i].mean(), linestyle='dashed', color=colors[i])
+            ax1.axhline(rollingAnnualReturn.ix[:,i].mean(), linestyle='dashed', color=colors[i])
+            ax2.axhline(rollingAnnualSharpeRatio.ix[:,i].mean(), linestyle='dashed', color=colors[i])
+            ax3.axhline(rollingAnnualStandardDeviation.ix[:,i].mean(), linestyle='dashed', color=colors[i])
               
         ax1.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
         ax1.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
@@ -767,8 +768,8 @@ class Analizer:
         for j in range(0, len(data.columns)):
             risk_diff = []
             for i in range(0, len(data.index)):
-                if data.iloc[i, j] < base_return:
-                    risk_diff.append(data.iloc[i, j]-base_return)
+                if data.ix[i, j] < base_return:
+                    risk_diff.append(data.ix[i, j]-base_return)
                 else:   
                     risk_diff.append(0.0)
             all_risk_diff.append(pd.DataFrame(data=risk_diff, index=data.index))
@@ -819,11 +820,11 @@ class Analizer:
             previousHighDate = balance.index[0]
             
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
                 else:
                     drawdown = 0
-                    maxBalance = balance.iloc[i, j]  
+                    maxBalance = balance.ix[i, j]  
                     previousHighDate = balance.index[i]   
                 if drawdown > maxdrawdown:
                     maxdrawdown = drawdown
@@ -902,8 +903,8 @@ class Analizer:
             recoveryStart = balance.index[0]
             
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
                 else:
                     if drawdown != 0.0:
                         recoveryEnd = balance.index[i]
@@ -911,7 +912,7 @@ class Analizer:
                         all_recoveries.append(difference.days)
                     drawdown = 0.0
                     bottom = 0.0
-                    maxBalance = balance.iloc[i, j] 
+                    maxBalance = balance.ix[i, j] 
                 if drawdown > bottom:
                     bottom = drawdown
                     recoveryStart = balance.index[i]
@@ -943,16 +944,19 @@ class Analizer:
             bottom = 0.0
             
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
                 else:
                     if bottom != 0.0:
                         all_drawdowns.append(bottom)
                     drawdown = 0.0
                     bottom = 0.0
-                    maxBalance = balance.iloc[i, j]
+                    maxBalance = balance.ix[i, j]
                 if drawdown > bottom:
-                    bottom = drawdown                       
+                    bottom = drawdown   
+                    
+            if bottom != 0.0:
+                all_drawdowns.append(bottom)                      
                                       
             all_dd_period_depths.append(np.asarray(all_drawdowns))
             
@@ -982,8 +986,8 @@ class Analizer:
             bottom = 0.0
             
             for i in range(0, len(balance.index)):
-                if balance.iloc[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
+                if balance.ix[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
                 else:
                     if bottom > 0.0:
                         drawdownEnd = balance.index[i]
@@ -991,9 +995,14 @@ class Analizer:
                         all_drawdown_lengths.append(difference.days)
                     drawdown = 0.0
                     drawdownStart = balance.index[i]              
-                    maxBalance = balance.iloc[i, j] 
+                    maxBalance = balance.ix[i, j] 
                 if drawdown > bottom:
                     bottom = drawdown                       
+                        
+            if bottom > 0.0:
+                drawdownEnd = balance.index[i]
+                difference = drawdownEnd-drawdownStart
+                all_drawdown_lengths.append(difference.days)
                                       
             all_dd_period_lengths.append(np.asarray(all_drawdown_lengths))
         
@@ -1029,7 +1038,7 @@ class Analizer:
         
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.iloc[:,i])
+            series = pd.Series(balance.ix[:,i])
             annual_return = series.resample('A', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(annual_return)
         annual_returns = pd.concat(all_series, axis=1)
@@ -1048,7 +1057,7 @@ class Analizer:
        
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.iloc[:,i])
+            series = pd.Series(balance.ix[:,i])
             monthly_return = series.resample('M', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(monthly_return)
         monthly_returns = pd.concat(all_series, axis=1)
@@ -1067,7 +1076,7 @@ class Analizer:
         
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.iloc[:,i])
+            series = pd.Series(balance.ix[:,i])
             weekly_return = series.resample('W', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(weekly_return)
         weekly_returns = pd.concat(all_series, axis=1)
@@ -1087,7 +1096,7 @@ class Analizer:
         balance = np.log(balance)
         all_r_values = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.iloc[:,i])
+            series = pd.Series(balance.ix[:,i])
             x = np.array(series.index.astype(np.int64)/(10**9))
             y = np.array(series.values)
             r_value = np.corrcoef(x, y)[0, 1]
@@ -1138,7 +1147,7 @@ class Analizer:
         all_ulcer_index = []
         
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.iloc[:,i])
+            series = pd.Series(balance.ix[:,i])
             weekly_balance = series.resample('W', how=lastValue)
             sum_squares = 0.0
             max_value = weekly_balance[0]
@@ -1168,7 +1177,7 @@ class Analizer:
     
            
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        last_drawdown_start = dd_periods['dd_start'].ix[-1]
         df = self.data[self.data.index < last_drawdown_start].dropna()
         
         simulated_returns = []
@@ -1204,7 +1213,7 @@ class Analizer:
         mc_sharpe = []
         
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        last_drawdown_start = dd_periods['dd_start'].ix[-1]
         difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
         
         for i in range(0, iterations):
@@ -1245,7 +1254,7 @@ class Analizer:
     def plot_mc_limits(self, index=0, iterations=100, confidence=99, saveToFile=""):
     
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
+        last_drawdown_start = dd_periods['dd_start'].ix[-1]
         difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
                    
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
