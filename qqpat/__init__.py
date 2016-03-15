@@ -13,7 +13,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.510"
+__version__ = "1.511"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -1402,6 +1402,36 @@ class Analizer:
         if external_df == False:
             self.statistics['ulcer_index'] = all_ulcer_index
         return all_ulcer_index
+        
+    def get_angle_coefficient(self, input_df = None, external_df = False):
+    
+        """
+        Calculates the angle coefficient defined here:
+        
+        for the different input time series.
+        """
+        
+        if external_df == False:
+            balance = (1+self.data.dropna()).cumprod()
+        else:
+            balance = (1+input_df).cumprod()
+            
+        all_angle_coefficients = []
+            
+        for i in range(0, len(balance.columns)):
+            series = pd.Series(balance.ix[:,i])
+            monthly_balance = series.resample('M', how=lastValue)
+            monthly_balance_log = np.log(monthly_balance)
+            angles = []
+            for j in range(1, len(monthly_balance_log.index)):
+                angles.append(degrees(atan(monthly_balance_log[j]-monthly_balance_log[j-1])))
+                  
+            all_angle_coefficients.append(np.asarray(angles).std())
+            
+        if external_df == False:
+            self.statistics['angle_coefficient'] = all_angle_coefficients
+        return all_angle_coefficients
+        
     
     def get_martin_ratio(self, input_df = None, external_df = False):
         
@@ -1427,7 +1457,7 @@ class Analizer:
         """
            
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].ix[-1]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         df = self.data[self.data.index < last_drawdown_start].dropna()
         
         simulated_returns = []
@@ -1475,7 +1505,7 @@ class Analizer:
         mc_sharpe = []
         
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].ix[-1]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
         
         for i in range(0, iterations):
@@ -1527,7 +1557,7 @@ class Analizer:
         """
     
         dd_periods = self.get_dd_periods()[index]
-        last_drawdown_start = dd_periods['dd_start'].ix[-1]
+        last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
                    
         fig, ax = plt.subplots(figsize=(12,8), dpi=100)
