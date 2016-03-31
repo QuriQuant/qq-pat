@@ -330,8 +330,8 @@ class Analizer:
             ax.set_xticklabels(labels_x, minor=False)
             ax.set_yticklabels(labels_y, minor=False)
             
-            for y in range(len(heatmap_data.index)):
-                for x in range(len(heatmap_data.columns)):
+            for y in range(heatmap_data.shape[0]):
+                for x in range(heatmap_data.shape[1]):
                     if not np.isnan(heatmap_data.iloc[y, x]):
                         plt.text(x, y, '%.2f' % heatmap_data.iloc[y, x],
                                 horizontalalignment='center',
