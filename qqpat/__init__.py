@@ -315,18 +315,10 @@ class Analizer:
             df['month']= df.index.month
             df['year']= df.index.year
             
-            all_year_returns = []
-            
-            for month in set(df['month']):
-                data = pd.DataFrame(df.loc[df['month'] == month, df.columns[0]].values)
-                data.columns = [datetime.date(1900, month, 1).strftime('%B')]
-                all_year_returns.append(data)
-            
-            heatmap_data = pd.concat(all_year_returns, axis=1).dropna()
-            
-            labels_y = list(set(df['year']))
+            heatmap_data = pd.pivot_table(df, index='year', columns='month', values=returns.columns[i])
+            labels_y = heatmap_data.index
             labels_x = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                    
+
             fig = plt.figure(figsize=(14,12))              
             ax = plt.subplot(1,1,1)
             
@@ -340,11 +332,12 @@ class Analizer:
             
             for y in range(heatmap_data.shape[0]):
                 for x in range(heatmap_data.shape[1]):
-                    plt.text(x, y, '%.2f' % heatmap_data.ix[y, x],
-                            horizontalalignment='center',
-                            verticalalignment='center',
-                            size=6.0
-                            )
+                    if not np.isnan(heatmap_data.iloc[y, x]):
+                        plt.text(x, y, '%.2f' % heatmap_data.iloc[y, x],
+                                horizontalalignment='center',
+                                verticalalignment='center',
+                                size=6.0
+                                )
                             
             ax.set_ylabel('Year')
             ax.set_xlabel('Month')
