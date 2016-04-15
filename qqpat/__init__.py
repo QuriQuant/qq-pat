@@ -1,10 +1,9 @@
+from cvxpy import *
 import datetime
-
 import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
 from math import *
-
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.dates import DateFormatter
@@ -13,7 +12,7 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 
-__version__ = "1.512"
+__version__ = "1.513"
 ROLLING_PLOT_PERIOD = 12
 
 def lastValue(x):
@@ -47,9 +46,11 @@ class Analizer:
                 series = pd.Series(df.ix[:,i])
                 returns = series.pct_change(fill_method='pad')
                 all_series.append(returns)
-            self.data = pd.concat(all_series, axis=1)             
+            self.data = pd.concat(all_series, axis=1) 
+            self.data = self.data.fillna(0.0)            
         elif column_type == 'return':
             self.data = pd.DataFrame(df)
+            self.data = self.data.fillna(0.0)
         else:
             raise ValueError('column_type \'{}\' not valid.'.format(column_type))
             
@@ -195,7 +196,7 @@ class Analizer:
             all_win_ratio.append(win_ratio)
         if external_df == False:    
             self.statistics['win ratio'] = all_win_ratio   
-        return all_win_ratio   
+        return all_win_ratio       
  
     def get_rolling_return(self, period, input_df = None, external_df = False):
     
@@ -297,6 +298,50 @@ class Analizer:
             self.series['result'] = result
         
         return result
+        
+    def min_variance_portfolio_optimization(self, minWeight = 0, plotWeights=False, saveToFile=""):
+    
+        """
+        Makes a minimum variance optimization using the monthly returns from the available 
+        data series within the dataframe. Returns a vector containing the weights of the instruments
+        to be used. The sum of all the weights is always constrained to 1. 
+        """
+        
+        returns = self.get_monthly_returns()
+        cov_mat = returns.cov()       
+        Sigma = np.asarray(cov_mat.values)
+        w = Variable(len(cov_mat))
+        risk = quad_form(w, Sigma)
+        prob = Problem(Minimize(risk), [sum_entries(w) == 1, w >= minWeight])    
+        prob.solve(solver=SCS)
+    
+        weights = []
+        for weight in w.value:
+            weights.append(float(weight[0]))
+            
+        if plotWeights == True:
+            fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+            ax.bar(range(0, len(returns.columns.values)), weights, align="center") 
+         
+            ax.set_xticks(range(0, len(returns.columns.values)))
+            labels_x = list(returns.columns.values)
+            ax.set_xticklabels(labels_x)
+            
+            ax.set_ylabel('Weight assigned (fraction)')
+            ax.set_xlabel('Asset name')
+            
+            if self.use_titles:
+                ax.set_title("Min variance portfolio weights")
+              
+            plt.xticks(rotation=90)
+            
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+        
+        return weights
+    
         
     def plot_monthly_returns_heatmap(self, saveToFile=""):
     
@@ -697,6 +742,109 @@ class Analizer:
         if self.use_titles:
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol= 3, fancybox=True, shadow=True)
         
+        ax3.set_xlabel('Time')
+        ax1.set_ylabel('Cumulative return')
+        ax2.set_ylabel('Week return')
+        ax3.set_ylabel('Drawdown')
+                    
+        #self.timeseries['rolling_maxdd'].plot(label='max_dd')
+        for i in range(0, len(max_drawdown_start)):
+            ax1.axvline(max_drawdown_start[i], linestyle='dashed', color=colors[i])
+            ax1.axvline(max_drawdown_end[i], linestyle='dashed', color=colors[i])       
+        
+        ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
+        ax3.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
+              
+        ax1.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+        ax1.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+ 
+        ax2.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+        ax2.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+
+        ax3.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+        ax3.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+ 
+        ax1.set_axisbelow(True)  
+        
+        plt.legend()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+            
+    def get_portfolio_returns(self, weights):
+    
+        """
+        Calculates the return dataframe of a portfolio
+        made up of all the columns within the dataframe
+        using the specified vector of weights.
+        """
+           
+        data = self.data.dropna()
+        
+        for i in range(0, len(data.columns)): 
+            data.ix[:,i] = data.ix[:,i]*weights[i]
+            
+        data = pd.DataFrame(data.sum(axis=1))
+        
+        return data
+            
+    def plot_analysis_portfolio_returns(self, weights, saveToFile=""):
+    
+        """
+        Plots the cumulative return, the underwater plot and
+        the weekly returns of a portfolio on a single graph. This plot
+        is similar to the PerformanceAnalytics R library summary plot.
+        In addition the plot also includes lines to highlight 
+        the deepest drawdown periods for all loaded time series.
+        The weights are specified through a python list containing
+        a separate weight for each DataFrame column.
+        """
+    
+        data = self.get_portfolio_returns(weights)
+        balance =(1+data).cumprod()
+        
+        weeklyReturns = self.get_weekly_returns(input_df=data, external_df=True)     
+              
+        max_drawdown_start, max_drawdown_end  = self.get_max_dd_dates(input_df=data, external_df=True)
+
+        underWaterSeries = self.get_underwater_data(input_df=data, external_df=True)
+        
+        fig = plt.figure(figsize=(10,10))
+              
+        ax1 = plt.subplot2grid((10, 1), (0, 0), rowspan=4)
+        ax2 = plt.subplot2grid((10, 1), (5, 0), rowspan=2)
+        ax3 = plt.subplot2grid((10, 1), (8, 0), rowspan=2)
+        
+        ax1.set_yscale('log')
+        
+        for axis in [ax1.xaxis, ax1.yaxis]:
+            axis.set_major_formatter(ScalarFormatter())
+        
+        ax1.xaxis.set_ticklabels([])
+        ax2.xaxis.set_ticklabels([])
+        
+        color_cycle = ax1._get_lines.prop_cycler
+        colors = []
+        
+        for i, color in enumerate(color_cycle):
+            if i<len(max_drawdown_start):
+                colors.append(color['color'])
+            else:
+                break
+                
+        ax1.set_prop_cycle(None)    
+        
+        for i, column in enumerate(balance.columns):  
+            if self.use_titles:                
+                ax1.plot(balance.index, balance[column], label=self.data.columns[i])   
+            else:
+                ax1.plot(balance.index, balance[column])       
+               
+        ax2.plot(weeklyReturns.index, weeklyReturns)
+        ax3.plot(underWaterSeries.index, underWaterSeries)
+             
         ax3.set_xlabel('Time')
         ax1.set_ylabel('Cumulative return')
         ax2.set_ylabel('Week return')
@@ -1457,7 +1605,7 @@ class Analizer:
         
         if period_length == 0:
             period_length = len(df.index)
-            
+                 
         mc_df = df.sample(period_length, replace=True)
         mc_df =  mc_df.set_index(df.index[:period_length])       
         
@@ -1607,7 +1755,7 @@ class Analizer:
             stats = self.get_mc_statistics(index, iterations, confidence, i*100)
             sharpes.append(stats['wc_sharpe']) 
             periods.append(i*100)   
-        
+       
         ax.plot(periods, sharpes)
         
         if saveToFile == "":
@@ -1670,4 +1818,6 @@ class Analizer:
             plt.show()
         else:
             fig.savefig(saveToFile)
+            
+
             
