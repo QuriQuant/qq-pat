@@ -11,9 +11,16 @@ import matplotlib as mpl
 import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
+from sklearn import covariance
 
-__version__ = "1.513"
-ROLLING_PLOT_PERIOD = 12
+__version__                = "1.514"
+ROLLING_PLOT_PERIOD        = 12
+
+SAMPLE_COVARIANCE          = 0
+LEDOIT_WOLF                = 1
+OAS                        = 2
+SHRUNK_SAMPLE_COVARIANCE   = 3
+
 
 def lastValue(x):
     try:
@@ -299,16 +306,30 @@ class Analizer:
         
         return result
         
-    def min_variance_portfolio_optimization(self, minWeight = 0, plotWeights=False, saveToFile=""):
+    def min_variance_portfolio_optimization(self, covarianceType = SAMPLE_COVARIANCE, minWeight = 0, plotWeights=False, saveToFile=""):
     
         """
         Makes a minimum variance optimization using the monthly returns from the available 
         data series within the dataframe. Returns a vector containing the weights of the instruments
-        to be used. The sum of all the weights is always constrained to 1. 
+        to be used. The sum of all the weights is always constrained to 1. Note that the covariance matrix
+        used can be the sample covariance, ledoit-wolf shrunk covariance matrix, oas shrunk covariance or 
+        shrunk sample covariance.
         """
         
         returns = self.get_monthly_returns()
-        cov_mat = returns.cov()       
+ 
+        if covarianceType == SAMPLE_COVARIANCE:
+            cov_mat = returns.cov()
+        elif covarianceType == LEDOIT_WOLF:
+            cov_mat = pd.DataFrame(covariance.ledoit_wolf(returns)[0]) 
+        elif covarianceType == OAS:
+            cov_mat = pd.DataFrame(covariance.oas(returns)[0]) 
+        elif covarainceType == SHRUNK_SAMPLE_COVARIANCE:       
+            cov_mat = pd.DataFrame(covariance.shrunk_covariance(returns.cov()))
+            
+        if covarianceType != SAMPLE_COVARIANCE and covarianceType != LEDOIT_WOLF and covarianceType != OAS and covarianceType != SHRUNK_SAMPLE_COVARIANCE:
+            return 0      
+         
         Sigma = np.asarray(cov_mat.values)
         w = Variable(len(cov_mat))
         risk = quad_form(w, Sigma)

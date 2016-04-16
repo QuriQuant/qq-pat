@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='qqpat',
-      version='1.513',
+      version='1.514',
       description='Python Financial Performance Analysys Tool',
       classifiers=[
         'Development Status :: 3 - Alpha',
@@ -19,7 +19,8 @@ setup(name='qqpat',
           'pandas>=0.17.1',
           'seaborn>=0.6.0',
           'matplotlib>=1.5.0',
-          'cvxpy>=0.3.9'
+          'cvxpy>=0.3.9',
+          'scikit-sklearn>=0.17.1'
       ],
       zip_safe=False,
       test_suite='nose.collector',
