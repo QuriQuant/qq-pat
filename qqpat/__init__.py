@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.517"
+__version__                = "1.518"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -305,6 +305,103 @@ class Analizer:
             self.series['result'] = result
         
         return result
+        
+    def mean_var_portfolio_optimization(self, covarianceType = SAMPLE_COVARIANCE, minWeight=0,  samples=100, gamma_low=-5, gamma_high=5, plotWeights=False, plotEfficientFrontier=False, saveToFileWeights="", saveToFileFrontier=""):
+    
+        """
+        Makes a mean-variance optimization using the monthly returns from the available 
+        data series within the dataframe. Returns a vector containing the weights of the instruments
+        to be used. The sum of all the weights is always constrained to 1. Note that the covariance matrix
+        used can be the sample covariance, ledoit-wolf shrunk covariance matrix, oas shrunk covariance or 
+        shrunk sample covariance.
+        """
+        
+        returns = self.get_monthly_returns()
+ 
+        if covarianceType == SAMPLE_COVARIANCE:
+            cov_mat = returns.cov()
+        elif covarianceType == LEDOIT_WOLF:
+            cov_mat = pd.DataFrame(covariance.ledoit_wolf(returns)[0]) 
+        elif covarianceType == OAS:
+            cov_mat = pd.DataFrame(covariance.oas(returns)[0]) 
+        elif covarainceType == SHRUNK_SAMPLE_COVARIANCE:       
+            cov_mat = pd.DataFrame(covariance.shrunk_covariance(returns.cov()))
+            
+        if covarianceType != SAMPLE_COVARIANCE and covarianceType != LEDOIT_WOLF and covarianceType != OAS and covarianceType != SHRUNK_SAMPLE_COVARIANCE:
+            return 0      
+    
+        n = len(cov_mat)
+        Sigma = np.asarray(cov_mat.values)
+        w = Variable(len(cov_mat))
+        gamma = Parameter(sign='positive')
+        mu = returns.mean()
+        ret = np.asarray(mu.values).T*w 
+        risk = quad_form(w, Sigma)
+        prob = Problem(Maximize(ret - gamma*risk), 
+               [sum_entries(w) == 1, 
+                w >= minWeight])
+                
+        SAMPLES = 30
+        risk_data = np.zeros(SAMPLES)
+        ret_data = np.zeros(SAMPLES)
+        gamma_vals = np.logspace(-5, 5, num=SAMPLES)
+    
+        for i in range(SAMPLES):
+            gamma.value = gamma_vals[i]
+            prob.solve(solver=SCS)
+            risk_data[i] = sqrt(risk.value)
+            ret_data[i] = ret.value
+       
+            if i == 0:
+                final_w = w.value
+                max_sharpe = ret.value/sqrt(risk.value)
+            
+            if (ret.value/risk.value > max_sharpe):
+                final_w = w.value
+                max_sharpe = ret.value/sqrt(risk.value)
+                           
+        weights = []
+        for weight in final_w:
+            weights.append(float(weight[0]))
+            
+        if plotWeights == True:
+            fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+            ax.bar(range(0, len(returns.columns.values)), weights, align="center") 
+         
+            ax.set_xticks(range(0, len(returns.columns.values)))
+            labels_x = list(returns.columns.values)
+            ax.set_xticklabels(labels_x)
+            
+            ax.set_ylabel('Weight assigned (fraction)')
+            ax.set_xlabel('Asset name')
+            
+            if self.use_titles:
+                ax.set_title("Min variance portfolio weights")
+              
+            plt.xticks(rotation=90)
+            
+            if saveToFileWeights == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFileWeights)
+                
+        if plotEfficientFrontier == True:
+            fig, ax = plt.subplots(figsize=(12,8), dpi=100)
+            
+            plt.plot(risk_data, ret_data, 'g-')
+            for i in range(n):
+                plt.plot(sqrt(Sigma[i,i]), np.asarray(mu.values)[i], 'ro')
+            plt.xlabel('Standard deviation')
+            plt.ylabel('Return')
+            plt.show()
+                         
+            if saveToFileFrontier == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFileFrontier)
+    
+        return weights
+
         
     def min_variance_portfolio_optimization(self, covarianceType = SAMPLE_COVARIANCE, minWeight = 0, plotWeights=False, saveToFile=""):
     
