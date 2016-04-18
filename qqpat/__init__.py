@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.518"
+__version__                = "1.519"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -341,12 +341,11 @@ class Analizer:
                [sum_entries(w) == 1, 
                 w >= minWeight])
                 
-        SAMPLES = 30
-        risk_data = np.zeros(SAMPLES)
-        ret_data = np.zeros(SAMPLES)
-        gamma_vals = np.logspace(-5, 5, num=SAMPLES)
+        risk_data = np.zeros(samples)
+        ret_data = np.zeros(samples)
+        gamma_vals = np.logspace(-5, 5, num=samples)
     
-        for i in range(SAMPLES):
+        for i in range(samples):
             gamma.value = gamma_vals[i]
             prob.solve(solver=SCS)
             risk_data[i] = sqrt(risk.value)
