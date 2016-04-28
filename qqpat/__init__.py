@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.519"
+__version__                = "1.520"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -316,7 +316,7 @@ class Analizer:
         shrunk sample covariance.
         """
         
-        returns = self.get_monthly_returns()
+        returns = self.data.dropna()
  
         if covarianceType == SAMPLE_COVARIANCE:
             cov_mat = returns.cov()
@@ -412,7 +412,7 @@ class Analizer:
         shrunk sample covariance.
         """
         
-        returns = self.get_monthly_returns()
+        returns = self.data.dropna()
  
         if covarianceType == SAMPLE_COVARIANCE:
             cov_mat = returns.cov()
