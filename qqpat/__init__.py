@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.520"
+__version__                = "1.521"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -1506,7 +1506,7 @@ class Analizer:
         
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             annual_return = series.resample('A', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(annual_return)
         annual_returns = pd.concat(all_series, axis=1)
@@ -1530,7 +1530,7 @@ class Analizer:
        
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             monthly_return = series.resample('M', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(monthly_return)
         monthly_returns = pd.concat(all_series, axis=1)
@@ -1554,7 +1554,7 @@ class Analizer:
         
         all_series = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             weekly_return = series.resample('W', how=lastValue).pct_change(fill_method='pad').dropna()
             all_series.append(weekly_return)
         weekly_returns = pd.concat(all_series, axis=1)
@@ -1579,7 +1579,7 @@ class Analizer:
         balance = np.log(balance)
         all_r_values = []
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             x = np.array(series.index.astype(np.int64)/(10**9))
             y = np.array(series.values)
             r_value = np.corrcoef(x, y)[0, 1]
@@ -1645,7 +1645,7 @@ class Analizer:
         all_ulcer_index = []
         
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             weekly_balance = series.resample('W', how=lastValue)
             sum_squares = 0.0
             max_value = weekly_balance[0]
@@ -1677,7 +1677,7 @@ class Analizer:
         all_angle_coefficients = []
             
         for i in range(0, len(balance.columns)):
-            series = pd.Series(balance.ix[:,i])
+            series = pd.Series(balance.iloc[:,i])
             monthly_balance = series.resample('M', how=lastValue)
             monthly_balance_log = np.log(monthly_balance)
             angles = []
