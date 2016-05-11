@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.521"
+__version__                = "1.522"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -86,8 +86,7 @@ class Analizer:
         all_win_ratio               = self.get_win_ratio(input_df, external_df) #
         all_reward_to_risk          = self.get_reward_to_risk(input_df, external_df)
         all_cagr                    = self.get_cagr(input_df, external_df)
-        all_sharpe_ratio            = self.get_sharpe_ratio(input_df, external_df)
-        all_sortino_ratio           = self.get_sortino_ratio(input_df, external_df)
+        all_sharpe_ratio            = self.get_sharpe_ratio(input_df, external_df)      
         all_mar_ratio               = self.get_mar_ratio(input_df, external_df)
         all_average_return          = self.get_returns_avg(input_df, external_df)
         all_stddev_return           = self.get_returns_std(input_df, external_df) 
@@ -102,6 +101,7 @@ class Analizer:
         all_burke_ratio             = self.get_burke_ratio(input_df, external_df)
         all_ulcer_index             = self.get_ulcer_index(input_df, external_df)
         all_martin_ratio            = self.get_martin_ratio(input_df, external_df)
+        all_sortino_ratio           = self.get_sortino_ratio(0.0, input_df, external_df)
         
         all_statistics = []
         
@@ -149,8 +149,8 @@ class Analizer:
             
         all_profit_factor = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.ix[:,i]).dropna()     
-            profit_factor = df[df > 0].sum()/abs(df[df < 0].sum()) 
+            df = pd.Series(data.iloc[:,i]).dropna()   
+            profit_factor = df[df > 0].sum()/(-df[df < 0].sum()) 
             all_profit_factor.append(profit_factor)
         
         if external_df == False:    
@@ -173,8 +173,8 @@ class Analizer:
           
         all_reward_to_risk = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.ix[:,i]).dropna()     
-            reward_to_risk = df[df > 0].mean()/abs(df[df < 0].mean()) 
+            df = pd.Series(data.iloc[:,i]).dropna()     
+            reward_to_risk = df[df > 0].mean()/(-df[df < 0].mean()) 
             all_reward_to_risk.append(reward_to_risk)
         
         if external_df == False:        
@@ -198,7 +198,7 @@ class Analizer:
             
         all_win_ratio = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.ix[:,i]).dropna()     
+            df = pd.Series(data.iloc[:,i]).dropna()     
             win_ratio = float(len(df[df > 0]))/float(len(df))
             all_win_ratio.append(win_ratio)
         if external_df == False:    
@@ -1162,12 +1162,12 @@ class Analizer:
     
         if 'downside risk' in self.series and external_df == False:
             return self.series['downside risk']
-            
+                 
         if external_df == False:
             data = self.data.dropna()     
         else:
-            data = input_df    
-        
+            data = input_df   
+            
         all_risk_diff = []
         names = list(data.columns.values)
         
@@ -1201,8 +1201,9 @@ class Analizer:
             data = self.data.dropna()     
         else:
             data = input_df   
-               
-        downside_risk = self.get_downside_risk(base_return, input_df)
+        
+        downside_risk = self.get_downside_risk(base_return, input_df, external_df)
+        
         if external_df == False:
             self.statistics['sortino ratio'] = sqrt(252)*(data.mean()/downside_risk.std()).values
         return self.statistics['sortino ratio']

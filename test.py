@@ -19,9 +19,15 @@ data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1
 
 analyzer = qqpat.Analizer(data, column_type='price', titles=["APPL", "TLT", "IBM"])
 
+summary = analyzer.get_statistics_summary()
+
+for idx, statistics in enumerate(summary):
+    print ""
+    print "statistics for system {}: {}".format(idx, statistics)
+    print ""
+
 analyzer.min_variance_portfolio_optimization(plotWeights=True)
 
-print "Monte carlo statistics using 200 simulations for the first symbol"
 print analyzer.get_mc_statistics(index=0, iterations=200, confidence=99)
 
 analyzer.plot_mc_wc_evolution_sharpe(index=0, iterations=50, confidence=99, max_period_length=1000)
