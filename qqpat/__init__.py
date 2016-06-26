@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.522"
+__version__                = "1.523"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -44,6 +44,10 @@ class Analizer:
         The column_type can be "return" or "price" depending on whether the 
         input dataframe contains prices or returns. Titles contains a list of strings
         to be assigned as dataframe titles.
+        
+        Values get turned into daily returns and the entire business date range from the
+        first to the last value is populated. If returns do not exist for a value
+        then this fate is assigned a 0.0 return.
         """
         
         if column_type == 'price':    
@@ -53,10 +57,24 @@ class Analizer:
                 series = pd.Series(df.ix[:,i])
                 returns = series.pct_change(fill_method='pad')
                 all_series.append(returns)
-            self.data = pd.concat(all_series, axis=1) 
+            process = pd.concat(all_series, axis=1)
+            process.columns = range(0, len(process.columns))
+            process =(1+process).cumprod() 
+            process = process.resample('D').apply(lastValue)
+            process = process.pct_change(fill_method='pad').dropna()
+            new_index = pd.bdate_range(process.index[0], process.index[-1])
+            process = process.reindex(new_index, fill_value=0.0)
+            self.data = process
             self.data = self.data.fillna(0.0)            
-        elif column_type == 'return':
-            self.data = pd.DataFrame(df)
+        elif column_type == 'return':       
+            process = pd.DataFrame(df)
+            process.columns = range(0, len(process.columns))
+            process =(1+process).cumprod() 
+            process = process.resample('D').apply(lastValue)
+            process = process.pct_change(fill_method='pad').dropna()
+            new_index = pd.bdate_range(process.index[0], process.index[-1])
+            process = process.reindex(new_index, fill_value=0.0)
+            self.data = process
             self.data = self.data.fillna(0.0)
         else:
             raise ValueError('column_type \'{}\' not valid.'.format(column_type))
@@ -217,13 +235,17 @@ class Analizer:
             return self.series['rolling return '+str(period)]
             
         if external_df == False: 
-            data = self.data.dropna().resample('M', how=sum)
+            data = self.data.dropna()           
         else:
-            data = input_df.dropna().resample('M', how=sum)
+            data = input_df.dropna()
+            
+        data =(1+data).cumprod() 
+        data = data.resample('M').apply(lastValue)
+        data = data.pct_change(fill_method='pad').dropna()
             
         if external_df == False:
-            self.series['rolling return '+str(period)] = pd.rolling_sum(data, int(period)).dropna()
-        return pd.rolling_sum(data, int(period)).dropna()
+            self.series['rolling return '+str(period)] = data.rolling(window=int(period), center=False).sum().dropna()
+        return data.rolling(window=int(period), center=False).sum().dropna()
             
     def get_rolling_sharpe_ratio(self, period, input_df = None, external_df = False):
     
@@ -237,12 +259,16 @@ class Analizer:
             return self.series['rolling sharpe ratio '+str(period)]
             
         if external_df == False: 
-            data = self.data.dropna().resample('M', how=sum)
+            data = self.data.dropna()
         else:
-            data = input_df.dropna().resample('M', how=sum)
+            data = input_df.dropna()
             
-        rolling_mean = pd.rolling_mean(data, int(period))
-        rolling_std = pd.rolling_std(data, int(period))
+        data =(1+data).cumprod() 
+        data = data.resample('M').apply(lastValue)
+        data = data.pct_change(fill_method='pad').dropna()
+            
+        rolling_mean = data.rolling(window=int(period), center=False).mean()
+        rolling_std = data.rolling(window=int(period), center=False).std()
         if external_df == False:
             self.series['rolling sharpe ratio '+str(period)] = sqrt(12)*(rolling_mean/rolling_std).dropna()
         return sqrt(12)*(rolling_mean/rolling_std).dropna()
@@ -259,9 +285,13 @@ class Analizer:
             return self.series['rolling stddev '+str(period)]
             
         if external_df == False: 
-            data = self.data.dropna().resample('M', how=sum)
+            data = self.data.dropna()
         else:
-            data = input_df.dropna().resample('M', how=sum)
+            data = input_df.dropna()
+            
+        data =(1+data).cumprod() 
+        data = data.resample('M').apply(lastValue)
+        data = data.pct_change(fill_method='pad').dropna()
             
         if external_df == False:
             self.series['rolling stddev '+str(period)] = pd.rolling_std(data, int(period)).dropna()
@@ -704,8 +734,8 @@ class Analizer:
             bottom = 0.0
             
             for i in range(0, len(balance.index)):
-                if balance.ix[i, j] < maxBalance:
-                    drawdown = (maxBalance-balance.ix[i, j])/maxBalance              
+                if balance.iloc[i, j] < maxBalance:
+                    drawdown = (maxBalance-balance.iloc[i, j])/maxBalance              
                 else:
                     if bottom > 0.0:
                         drawdownEnd = balance.index[i]
@@ -717,7 +747,7 @@ class Analizer:
                     drawdown = 0.0                  
                     bottom = 0.0
                     drawdownStart = balance.index[i]              
-                    maxBalance = balance.ix[i, j]
+                    maxBalance = balance.iloc[i, j]
                 if drawdown > bottom:
                     bottom = drawdown  
             
@@ -1508,7 +1538,8 @@ class Analizer:
         all_series = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            annual_return = series.resample('A', how=lastValue).pct_change(fill_method='pad').dropna()
+            annual_return = series.resample('A').apply(lastValue)
+            annual_return = annual_return.pct_change(fill_method='pad').dropna()
             all_series.append(annual_return)
         annual_returns = pd.concat(all_series, axis=1)
         if external_df == False:
@@ -1532,7 +1563,8 @@ class Analizer:
         all_series = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            monthly_return = series.resample('M', how=lastValue).pct_change(fill_method='pad').dropna()
+            monthly_return = series.resample('M').apply(lastValue)
+            monthly_return = monthly_return.pct_change(fill_method='pad').dropna()
             all_series.append(monthly_return)
         monthly_returns = pd.concat(all_series, axis=1)
         if external_df == False:
@@ -1556,7 +1588,8 @@ class Analizer:
         all_series = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            weekly_return = series.resample('W', how=lastValue).pct_change(fill_method='pad').dropna()
+            weekly_return = series.resample('W').apply(lastValue)
+            weekly_return = weekly_return.pct_change(fill_method='pad').dropna()
             all_series.append(weekly_return)
         weekly_returns = pd.concat(all_series, axis=1)
         if external_df == False:
@@ -1647,7 +1680,7 @@ class Analizer:
         
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            weekly_balance = series.resample('W', how=lastValue)
+            weekly_balance = series.resample('W').apply(lastValue)
             sum_squares = 0.0
             max_value = weekly_balance[0]
             for value in weekly_balance:
@@ -1679,7 +1712,7 @@ class Analizer:
             
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
-            monthly_balance = series.resample('M', how=lastValue)
+            monthly_balance = series.resample('M').apply(lastValue)
             monthly_balance_log = np.log(monthly_balance)
             angles = []
             for j in range(1, len(monthly_balance_log.index)):
@@ -1718,7 +1751,7 @@ class Analizer:
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         df = self.data[self.data.index < last_drawdown_start].dropna()
-        
+         
         simulated_returns = []
         
         if period_length == 0:
@@ -1771,7 +1804,7 @@ class Analizer:
             df = self.get_mc_simulation(index, difference_in_days)
             mc_cagr.append(-self.get_cagr(input_df = df, external_df = True)[0])
             mc_sharpe.append(-self.get_sharpe_ratio(input_df = df, external_df = True)[0])
-            
+                     
         wc_cagr = np.asarray(mc_cagr)
         wc_sharpe = np.asarray(mc_sharpe)
         
