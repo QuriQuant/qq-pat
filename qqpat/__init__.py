@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.523"
+__version__                = "1.524"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -47,7 +47,7 @@ class Analizer:
         
         Values get turned into daily returns and the entire business date range from the
         first to the last value is populated. If returns do not exist for a value
-        then this fate is assigned a 0.0 return.
+        then this date is assigned a 0.0 return.
         """
         
         if column_type == 'price':    
@@ -120,6 +120,7 @@ class Analizer:
         all_ulcer_index             = self.get_ulcer_index(input_df, external_df)
         all_martin_ratio            = self.get_martin_ratio(input_df, external_df)
         all_sortino_ratio           = self.get_sortino_ratio(0.0, input_df, external_df)
+        all_omega_ratio             = self.get_omega_ratio(0.0, input_df, external_df)
         
         all_statistics = []
         
@@ -145,12 +146,45 @@ class Analizer:
             statistics['burke ratio']               = all_burke_ratio[i]
             statistics['ulcer index']               = all_ulcer_index[i]
             statistics['martin ratio']              = all_martin_ratio[i]
+            statistics['omega ratio']               = all_omega_ratio[i]
             all_statistics.append(statistics)
         
         if external_df == False:    
             self.statistics['summary'] = all_statistics
         return all_statistics 
         
+    def get_omega_ratio(self, risk_threshold = 0, input_df = None, external_df = False):
+    
+        """
+        Returns the omega ratio for all input data columns at the chosen risk threshold (default is 0.0)
+        """
+    
+        if 'omega ratio' in self.statistics and external_df == False:
+            return self.statistics['omega ratio']    
+            
+        if external_df == False:
+            data = self.data.dropna()     
+        else:
+            data = input_df 
+            
+        all_omega_ratio = []        
+        for i in range(0, len(data.columns)):                       
+            df = pd.Series(data.iloc[:,i]).dropna() 
+            data_omega = np.sort(df.values)
+            p = 1. * np.arange(len(data_omega)) / (len(data_omega) - 1)
+            data_omega_positive = data_omega[data_omega>risk_threshold]
+            data_omega_negative = data_omega[data_omega<=risk_threshold]
+            p_negative = p[:len(data_omega_negative)]
+            p_positive = p[len(data_omega_negative):]
+            positive_integral = np.trapz((1-p_positive), x=data_omega_positive)
+            negative_integral = np.trapz(p_negative, x=data_omega_negative)
+            omega_ratio = positive_integral/negative_integral
+            all_omega_ratio.append(omega_ratio)
+        
+        if external_df == False:    
+            self.statistics['omega ratio'] = all_omega_ratio
+        return all_omega_ratio
+            
     def get_profit_factor(self, input_df = None, external_df = False):
     
         """
@@ -913,6 +947,41 @@ class Analizer:
         ax3.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
  
         ax1.set_axisbelow(True)  
+        
+        plt.legend()
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+            
+    def plot_cdf(self, saveToFile=""):
+    
+        """
+        Plots the cumulative distribution function from the input
+        return data for all the columns in the data.
+        """
+    
+        data = self.data.dropna()
+      
+        fig, ax1 = plt.subplots(figsize=(12,8), dpi=100)
+
+        for i, column in enumerate(data.columns): 
+        
+            df = pd.Series(data.iloc[:,i]).dropna() 
+            data_omega = np.sort(df.values)
+            p = 1. * np.arange(len(data_omega)) / (len(data_omega) - 1)
+             
+            if self.use_titles:                
+                ax1.plot(data_omega, p, label=self.data.columns[i])   
+            else:
+                ax1.plot(data_omega, p)       
+               
+        
+        if self.use_titles:
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol= 3, fancybox=True, shadow=True)
+        
+        ax1.set_xlabel('Return (%)')
+        ax1.set_ylabel('Cumulative distribution function')
         
         plt.legend()
         if saveToFile == "":
