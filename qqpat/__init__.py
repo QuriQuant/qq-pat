@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.524"
+__version__                = "1.525"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -251,7 +251,7 @@ class Analizer:
         all_win_ratio = []        
         for i in range(0, len(data.columns)):                       
             df = pd.Series(data.iloc[:,i]).dropna()     
-            win_ratio = float(len(df[df > 0]))/float(len(df))
+            win_ratio = float(len(df[df > 0]))/float(len(df[df!=0]))
             all_win_ratio.append(win_ratio)
         if external_df == False:    
             self.statistics['win ratio'] = all_win_ratio   
@@ -824,6 +824,89 @@ class Analizer:
             
             ax.set_ylabel('Month Return (%)')
             ax.set_xlabel('Time')
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
+                           
+            plt.xticks(rotation=90)
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+                
+    def plot_by_day_of_week_returns(self, saveToFile=""):
+    
+        """
+        Plots returns grouped by day of week. The mean daily return is also
+        plotted as a black dashed horizontal line.
+        """
+        
+        returns = self.data.dropna()
+        labels_x = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        
+        for i in range(0, len(returns.columns)):
+               
+            df = pd.Series(returns.ix[:,i]*100)
+                                                   
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
+            
+            day_of_week_avg_return = []
+                  
+            for j in range(0,7):   
+                df_by_day = df[df.index.weekday==j]
+                if len(df_by_day) > 0:
+                    day_of_week_avg_return.append(df_by_day.values.mean())
+                else:
+                    day_of_week_avg_return.append(0.0)    
+           
+            ax.bar(range(0,7), day_of_week_avg_return, align="center") 
+            ax.axhline(df.values.mean(), linestyle='dashed', color='black', linewidth=1.5)
+              
+            ax.set_ylabel('Average Return (%)')
+            ax.set_xlabel('Day of week')
+            ax.set_xticklabels(labels_x, minor=False)
+            
+            if self.use_titles:
+                ax.set_title(self.data.columns[i])
+                           
+            plt.xticks(rotation=90)
+            if saveToFile == "":
+                plt.show()
+            else:
+                fig.savefig(saveToFile)
+    
+    def plot_by_month_returns(self, saveToFile=""):
+    
+        """
+        Plots returns grouped by month. The mean monthly return is also
+        plotted as a black dashed horizontal line.
+        """
+        
+        returns = self.get_monthly_returns()
+        labels_x = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        
+        for i in range(0, len(returns.columns)):
+               
+            df = pd.Series(returns.ix[:,i]*100)
+                                                   
+            fig, ax = plt.subplots(figsize=(20,14), dpi=100)
+            
+            month_avg_return = []
+                  
+            for j in range(1,13):   
+                df_by_month = df[df.index.month==j]
+                if len(df_by_month) > 0:
+                    month_avg_return.append(df_by_month.values.mean())
+                else:
+                    month_avg_return.append(0.0)    
+           
+            ax.bar(range(1,13), month_avg_return, align="center") 
+            ax.axhline(df.values.mean(), linestyle='dashed', color='black', linewidth=1.5)
+            
+            ax.set_xticks(np.arange(13) + 1.0, minor=False)  
+            ax.set_ylabel('Average Return (%)')
+            ax.set_xlabel('Month')
+            ax.set_xticklabels(labels_x, minor=False)
             
             if self.use_titles:
                 ax.set_title(self.data.columns[i])
