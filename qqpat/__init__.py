@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.525"
+__version__                = "1.526"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -562,7 +562,7 @@ class Analizer:
                         plt.text(x, y, '%.2f' % heatmap_data.iloc[y, x],
                                 horizontalalignment='center',
                                 verticalalignment='center',
-                                size=6.0
+                                size=10.0
                                 )
                             
             ax.set_ylabel('Year')
@@ -975,7 +975,9 @@ class Analizer:
         ax2 = plt.subplot2grid((10, 1), (5, 0), rowspan=2)
         ax3 = plt.subplot2grid((10, 1), (8, 0), rowspan=2)
         
-        ax1.set_yscale('log')
+        for column in balance.columns:
+            if balance[column][-1] > 10*balance[column][0]:
+                ax1.set_yscale('log')
         
         for axis in [ax1.xaxis, ax1.yaxis]:
             axis.set_major_formatter(ScalarFormatter())
@@ -1976,8 +1978,7 @@ class Analizer:
         simulation iterations.
         """
                                
-        fig, ax = plt.subplots(figsize=(12,8), dpi=100)
-        ax.set_yscale('log')
+        fig, ax = plt.subplots(figsize=(12,8), dpi=100)   
         ax.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax.set_xlabel('Time')
         ax.set_ylabel('Cum Return') 
@@ -1986,7 +1987,9 @@ class Analizer:
             df = self.get_mc_simulation(index)
             balance =(1+df).cumprod()        
             ax.plot(balance.index, balance)
-        
+            if balance.ix[-1, 0] > 10*balance.ix[0, 0]:
+                ax.set_yscale('log')
+                
         if saveToFile == "":
             plt.show()
         else:

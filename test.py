@@ -26,6 +26,7 @@ for idx, statistics in enumerate(summary):
     print "statistics for system {}: {}".format(idx, statistics)
     print ""
 
+analyzer.plot_analysis_returns()
 analyzer.min_variance_portfolio_optimization(plotWeights=True)
 
 analyzer.plot_mc_wc_evolution_sharpe(index=0, iterations=50, confidence=99, max_period_length=1000)
@@ -34,7 +35,6 @@ analyzer.plot_mc_wc_evolution_cagr(index=0, iterations=50, confidence=99, max_pe
 analyzer.plot_mc_distributions(index=0, iterations=100)
 analyzer.plot_mc_simulations(index=0, iterations=100)
 
-analyzer.plot_analysis_returns()
 analyzer.plot_analysis_rolling()
 analyzer.plot_monthly_returns_heatmap()
 analyzer.plot_annual_returns()
