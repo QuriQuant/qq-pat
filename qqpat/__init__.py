@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.526"
+__version__                = "1.527"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -127,26 +127,26 @@ class Analizer:
         for i in range(0, len(self.data.columns)):
         
             statistics = {}                    
-            statistics['win ratio']                 = all_win_ratio[i]
-            statistics['reward to risk']            = all_reward_to_risk[i]
+            statistics['win_ratio']                 = all_win_ratio[i]
+            statistics['reward_to_risk']            = all_reward_to_risk[i]
             statistics['cagr']                      = all_cagr[i]
-            statistics['sharpe ratio']              = all_sharpe_ratio[i]
-            statistics['sortino ratio']             = all_sortino_ratio[i]
-            statistics['mar ratio']                 = all_mar_ratio[i]
-            statistics['average return']            = all_average_return[i]
-            statistics['stddev returns']            = all_stddev_return[i]
-            statistics['average drawdown']          = all_average_dd[i]
-            statistics['average drawdown length']   = all_average_dd_length[i]
-            statistics['profit factor']             = all_profit_factor[i]
-            statistics['pearson correlation']       = all_pearson_correlation[i]
-            statistics['max drawdown']              = all_max_drawdown[i]
-            statistics['longest drawdown']          = all_longest_dd_period[i]
-            statistics['average recovery']          = all_average_recovery[i]
-            statistics['longest recovery']          = all_longest_recovery[i]
-            statistics['burke ratio']               = all_burke_ratio[i]
-            statistics['ulcer index']               = all_ulcer_index[i]
-            statistics['martin ratio']              = all_martin_ratio[i]
-            statistics['omega ratio']               = all_omega_ratio[i]
+            statistics['sharpe_ratio']              = all_sharpe_ratio[i]
+            statistics['sortino_ratio']             = all_sortino_ratio[i]
+            statistics['mar_ratio']                 = all_mar_ratio[i]
+            statistics['average_return']            = all_average_return[i]
+            statistics['stddev_returns']            = all_stddev_return[i]
+            statistics['average_drawdown']          = all_average_dd[i]
+            statistics['average_drawdown length']   = all_average_dd_length[i]
+            statistics['profit_factor']             = all_profit_factor[i]
+            statistics['pearson_correlation']       = all_pearson_correlation[i]
+            statistics['max_drawdown']              = all_max_drawdown[i]
+            statistics['longest_drawdown']          = all_longest_dd_period[i]
+            statistics['average_recovery']          = all_average_recovery[i]
+            statistics['longest_recovery']          = all_longest_recovery[i]
+            statistics['burke_ratio']               = all_burke_ratio[i]
+            statistics['ulcer_index']               = all_ulcer_index[i]
+            statistics['martin_ratio']              = all_martin_ratio[i]
+            statistics['omega_ratio']               = all_omega_ratio[i]
             all_statistics.append(statistics)
         
         if external_df == False:    
@@ -328,8 +328,8 @@ class Analizer:
         data = data.pct_change(fill_method='pad').dropna()
             
         if external_df == False:
-            self.series['rolling stddev '+str(period)] = pd.rolling_std(data, int(period)).dropna()
-        return pd.rolling_std(data, int(period)).dropna()
+            self.series['rolling stddev '+str(period)] = data.rolling(window=int(period), center=False).std().dropna()
+        return data.rolling(window=int(period), center=False).std().dropna()
                    
     def get_underwater_data(self, input_df = None, external_df = False):
     
@@ -547,8 +547,10 @@ class Analizer:
 
             fig = plt.figure(figsize=(14,12))              
             ax = plt.subplot(1,1,1)
+            max_scale = max(np.amin(-heatmap_data.dropna().as_matrix()), np.amax(heatmap_data.dropna().as_matrix()))
+            min_scale = -max_scale
             
-            heatmap = ax.matshow(heatmap_data, aspect = 'auto', origin = 'lower', cmap ="RdYlGn")
+            heatmap = ax.matshow(heatmap_data, aspect = 'auto', origin = 'lower', cmap ="RdYlGn", vmin=min_scale, vmax=max_scale)
             
             ax.set_yticks(np.arange(heatmap_data.shape[0]) + 0.5, minor=False)
             ax.set_xticks(np.arange(heatmap_data.shape[1]) + 0.5, minor=False)         
@@ -706,6 +708,20 @@ class Analizer:
                 plt.show()
             else:
                 fig.savefig(saveToFile)
+                
+    def get_correlation_values(self, input_df = None, external_df = False):
+    
+        """
+        Gets values for the pearson correlation of monthly returns
+        between all the different input columns.
+        """
+        
+        if external_df == False:
+            monthlyReturns = self.get_monthly_returns()     
+        else:
+            monthlyReturns = self.get_monthly_returns(input_df = input_df, external_df = True) 
+ 
+        return monthlyReturns.corr()
     
     def plot_correlation_heatmap(self, saveToFile=""):
     
@@ -717,6 +733,8 @@ class Analizer:
         monthlyReturns = self.get_monthly_returns()
         correlations = monthlyReturns.corr()
                     
+        sns.set_style("whitegrid", {'axes.grid' : False})
+        
         fig = plt.figure(figsize=(14,12))              
         ax = plt.subplot(1,1,1)
             
@@ -729,13 +747,87 @@ class Analizer:
                 plt.text(x, y, '%.2f' % correlations.ix[y, x],
                         horizontalalignment='center',
                         verticalalignment='center',
-                        size=6.0
+                        size=12.0
                         )
         
         if saveToFile == "":
             plt.show()
         else:
             fig.savefig(saveToFile)
+        
+        sns.set_style("whitegrid", {'axes.grid' : True})
+            
+    def get_lpoi_values(self, input_df = None, external_df = False):
+    
+        """
+        Gets values for the LPOI (Losing Period Overlap Index)
+        between all the different input columns.
+        """
+        
+        if external_df == False:
+            monthlyReturns = self.get_monthly_returns()     
+        else:
+            monthlyReturns = self.get_monthly_returns(input_df = input_df, external_df = True) 
+ 
+        column_names = monthlyReturns.columns
+        lpoi_values = np.zeros([len(monthlyReturns.columns), len(monthlyReturns.columns)])
+        negativeReturnTotals = np.zeros([len(monthlyReturns.columns)])
+        monthlyReturns.columns = range(0, len(monthlyReturns.columns))
+
+        for j in range(0, len(monthlyReturns.columns)):
+            negativeReturnTotals[j] =  float(len(monthlyReturns[monthlyReturns.ix[:,j]<0]))
+
+        for j in range(0, len(monthlyReturns.columns)):
+            for k in range(0, len(monthlyReturns.columns)):
+                if j==k:
+                    lpoi_values[j, k] = 1
+                    continue    
+            
+                if k>j:
+                    continue
+            
+            numerator = float(len(monthlyReturns[(monthlyReturns.ix[:,j]<0) & (monthlyReturns.ix[:,k]<0)].ix[:,j]))
+            denominator = (negativeReturnTotals[j]+negativeReturnTotals[k])/2
+            lpoi_values[j, k] = numerator/denominator
+            lpoi_values[k, j] = lpoi_values[j, k]
+            
+        lpoi_values = pd.DataFrame(lpoi_values)
+        lpoi_values.columns = column_names
+        lpoi_values = lpoi_values.set_index(column_names)
+        
+        return lpoi_values
+                       
+    def plot_lpoi_heatmap(self, saveToFile=""):
+    
+        """
+        Plots a LPOI (Losing Period Overlap Index) heatmap showing the LPOI
+        between the different input columns. 
+        """
+        
+        lpoi_values = self.get_lpoi_values()
+                    
+        sns.set_style("whitegrid", {'axes.grid' : False})
+        fig = plt.figure(figsize=(14,12))              
+        ax = plt.subplot(1,1,1)
+            
+        heatmap = ax.matshow(lpoi_values, aspect = 'auto', origin = 'lower', cmap ="RdYlGn")
+        ax.invert_yaxis()
+        ax.xaxis.tick_top()
+        
+        for y in range(lpoi_values.shape[0]):
+            for x in range(lpoi_values.shape[1]):
+                plt.text(x, y, '%.2f' % lpoi_values.ix[y, x],
+                        horizontalalignment='center',
+                        verticalalignment='center',
+                        size=12.0
+                        )
+        
+        if saveToFile == "":
+            plt.show()
+        else:
+            fig.savefig(saveToFile)
+        
+        sns.set_style("whitegrid", {'axes.grid' : True})
             
     def get_dd_periods(self, input_df = None, external_df = False):
     

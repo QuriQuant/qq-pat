@@ -19,12 +19,14 @@ data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1
 
 analyzer = qqpat.Analizer(data, column_type='price', titles=["APPL", "TLT", "IBM"])
 
+
 summary = analyzer.get_statistics_summary()
 
 for idx, statistics in enumerate(summary):
     print ""
     print "statistics for system {}: {}".format(idx, statistics)
     print ""
+
 
 analyzer.plot_analysis_returns()
 analyzer.min_variance_portfolio_optimization(plotWeights=True)
