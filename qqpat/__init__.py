@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.527"
+__version__                = "1.528"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -787,7 +787,7 @@ class Analizer:
                     continue
             
             numerator = float(len(monthlyReturns[(monthlyReturns.ix[:,j]<0) & (monthlyReturns.ix[:,k]<0)].ix[:,j]))
-            denominator = (negativeReturnTotals[j]+negativeReturnTotals[k])/2
+            denominator = max(negativeReturnTotals[j],negativeReturnTotals[k])
             lpoi_values[j, k] = numerator/denominator
             lpoi_values[k, j] = lpoi_values[j, k]
             
