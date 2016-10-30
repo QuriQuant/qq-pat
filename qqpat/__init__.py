@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.528"
+__version__                = "1.529"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -786,10 +786,10 @@ class Analizer:
                 if k>j:
                     continue
             
-            numerator = float(len(monthlyReturns[(monthlyReturns.ix[:,j]<0) & (monthlyReturns.ix[:,k]<0)].ix[:,j]))
-            denominator = max(negativeReturnTotals[j],negativeReturnTotals[k])
-            lpoi_values[j, k] = numerator/denominator
-            lpoi_values[k, j] = lpoi_values[j, k]
+                numerator = float(len(monthlyReturns[(monthlyReturns.ix[:,j]<0) & (monthlyReturns.ix[:,k]<0)].ix[:,j]))
+                denominator = max(negativeReturnTotals[j],negativeReturnTotals[k])
+                lpoi_values[j, k] = numerator/denominator
+                lpoi_values[k, j] = lpoi_values[j, k]
             
         lpoi_values = pd.DataFrame(lpoi_values)
         lpoi_values.columns = column_names
@@ -2006,7 +2006,7 @@ class Analizer:
         mc_df = df.sample(period_length, replace=True)
         mc_df =  mc_df.set_index(df.index[:period_length])       
         
-        return mc_df
+        return mc_df     
         
     def get_mc_statistics(self, index=0, iterations=100, confidence=99, period_length=0):
     
