@@ -12,8 +12,9 @@ import matplotlib.mlab as mlab
 import seaborn as sns
 from random import randint
 from sklearn import covariance
+from scipy.stats import kurtosis
 
-__version__                = "1.530"
+__version__                = "1.531"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -56,7 +57,7 @@ class Analizer:
             for i in range(0, len(df.columns)):
                 series = pd.Series(df.ix[:,i])
                 returns = series.pct_change(fill_method='pad')
-                all_series.append(returns)
+                all_series.append(returns)        
             process = pd.concat(all_series, axis=1)
             process.columns = range(0, len(process.columns))
             process =(1+process).cumprod() 
@@ -97,7 +98,7 @@ class Analizer:
         Returns a dictionary containing a summary of all basic statistics for all 
         the columns within the input dataframe.
         """
-    
+
         if 'summary' in self.statistics and external_df == False:
             return self.statistics['summary']
     
@@ -123,6 +124,7 @@ class Analizer:
         all_omega_ratio             = self.get_omega_ratio(0.0, input_df, external_df)
         all_tail_ratio              = self.get_tail_ratio(input_df, external_df)
         all_kurtosis                = self.get_kurtosis(input_df, external_df)
+        all_skewness                = self.get_skewness(input_df, external_df)
         
         all_statistics = []
         
@@ -1998,9 +2000,14 @@ class Analizer:
         """
         
         if 'tail ratio' in self.statistics and external_df == False:
-            return self.statistics['tail ratio']   
-        
-        tail_ratio = input_df.quantile(q=0.95, axis=1)/input_df.quantile(q=0.05, axis=1)
+            return self.statistics['tail ratio'] 
+
+        if external_df == False: 
+            data = self.data.dropna()           
+        else:
+            data = input_df.dropna() 
+
+        tail_ratio =data.quantile(q=0.95, axis=1)/data.quantile(q=0.05, axis=1)
       
         if external_df == False:
             self.statistics['tail ratio'] = tail_ratio        
@@ -2014,12 +2021,23 @@ class Analizer:
         
         if 'kurtosis' in self.statistics and external_df == False:
             return self.statistics['kurtosis']   
+
+        if external_df == False: 
+            data = self.data.dropna()           
+        else:
+            data = input_df.dropna()
         
-        kurtosis = input_df.kurtosis(axix=1)
+        #this was implemented using scipy kurtosis as pandas kurtosis
+        #did not work correctly up to v0.20.0
+        all_kurtosis = []
+
+        for c in data.columns:
+            k = kurtosis(data[c])
+            all_kurtosis.append(k)
       
         if external_df == False:
-            self.statistics['kurtosis'] = kurtosis      
-        return kurtosis
+            self.statistics['kurtosis'] = all_kurtosis      
+        return all_kurtosis
 
     def get_skewness(self, input_df = None, external_df = False):
         
@@ -2030,7 +2048,12 @@ class Analizer:
         if 'skewness' in self.statistics and external_df == False:
             return self.statistics['skewness']   
         
-        skewness = input_df.skew(axix=1)
+        if external_df == False: 
+            data = self.data.dropna()           
+        else:
+            data = input_df.dropna()
+
+        skewness = data.skew(axis=1)
       
         if external_df == False:
             self.statistics['skewness'] = skewness      

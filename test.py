@@ -3,22 +3,15 @@ from pandas_datareader import data
 import datetime
 import qqpat
 
-aapl = data.get_data_yahoo('AAPL',
-                                 start=datetime.datetime(2003, 10, 1),
-                                 end=datetime.datetime(2015, 1, 1))
+aapl = data.DataReader('AAPL','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now()) 
                                  
-spy = data.get_data_yahoo('TLT',
-                                 start=datetime.datetime(2003, 10, 1),
-                                 end=datetime.datetime(2015, 1, 1))
+spy = data.DataReader('SPY','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now()) 
                                  
-ibm = data.get_data_yahoo('IBM',
-                                 start=datetime.datetime(2003, 10, 1),
-                                 end=datetime.datetime(2015, 1, 1))                                 
+ibm = data.DataReader('IBM','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now())                                
 
-data = pd.concat([aapl['Adj Close'], spy['Adj Close'], ibm['Adj Close']], axis=1)
+data = pd.concat([aapl['Close'], spy['Close'], ibm['Close']], axis=1)
 
-analyzer = qqpat.Analizer(data, column_type='price', titles=["APPL", "TLT", "IBM"])
-
+analyzer = qqpat.Analizer(data, column_type='price', titles=["APPL", "SPY", "IBM"])
 
 summary = analyzer.get_statistics_summary()
 
