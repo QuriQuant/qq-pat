@@ -13,8 +13,9 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 from scipy.stats import kurtosis
+from scipy.stats import skew
 
-__version__                = "1.531"
+__version__                = "1.532"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -2053,11 +2054,15 @@ class Analizer:
         else:
             data = input_df.dropna()
 
-        skewness = data.skew(axis=1)
+        all_skewness = []
+
+        for c in data.columns:
+            k = skew(data[c])
+            all_skewness.append(k)
       
         if external_df == False:
-            self.statistics['skewness'] = skewness      
-        return skewness
+            self.statistics['skewness'] = all_skewness    
+        return all_skewness
         
     def get_mc_simulation(self, index=0, period_length=0):
     
