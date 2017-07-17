@@ -15,7 +15,7 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 
-__version__                = "1.533"
+__version__                = "1.534"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -2011,7 +2011,7 @@ class Analizer:
         all_tail_ratio = []
 
         for c in data.columns:
-            k = np.percentile(data[c], 95)/np.percentile(data[c], 5)
+            k = np.abs(np.percentile(data[c], 95)/np.percentile(data[c], 5))
             all_tail_ratio.append(k)
       
         if external_df == False:
