@@ -13,7 +13,7 @@ import seaborn as sns
 from random import randint
 from sklearn import covariance
 
-__version__                = "1.529"
+__version__                = "1.530"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -121,6 +121,8 @@ class Analizer:
         all_martin_ratio            = self.get_martin_ratio(input_df, external_df)
         all_sortino_ratio           = self.get_sortino_ratio(0.0, input_df, external_df)
         all_omega_ratio             = self.get_omega_ratio(0.0, input_df, external_df)
+        all_tail_ratio              = self.get_tail_ratio(input_df, external_df)
+        all_kurtosis                = self.get_kurtosis(input_df, external_df)
         
         all_statistics = []
         
@@ -147,6 +149,9 @@ class Analizer:
             statistics['ulcer_index']               = all_ulcer_index[i]
             statistics['martin_ratio']              = all_martin_ratio[i]
             statistics['omega_ratio']               = all_omega_ratio[i]
+            statistics['tail_ratio']                = all_tail_ratio[i]
+            statistics['kurtosis']                  = all_kurtosis[i]
+            statistics['skewness']                  = all_skewness[i]
             all_statistics.append(statistics)
         
         if external_df == False:    
@@ -1985,6 +1990,51 @@ class Analizer:
         if external_df == False:
             self.statistics['martin ratio'] = martin_ratio         
         return martin_ratio
+
+    def get_tail_ratio(self, input_df = None, external_df = False):
+        
+        """
+        Returns the tail ratio of a series (95% percentile/5% percentile)
+        """
+        
+        if 'tail ratio' in self.statistics and external_df == False:
+            return self.statistics['tail ratio']   
+        
+        tail_ratio = input_df.quantile(q=0.95, axis=1)/input_df.quantile(q=0.05, axis=1)
+      
+        if external_df == False:
+            self.statistics['tail ratio'] = tail_ratio        
+        return tail_ratio
+
+    def get_kurtosis(self, input_df = None, external_df = False):
+        
+        """
+        Returns the kurtosis of returns
+        """
+        
+        if 'kurtosis' in self.statistics and external_df == False:
+            return self.statistics['kurtosis']   
+        
+        kurtosis = input_df.kurtosis(axix=1)
+      
+        if external_df == False:
+            self.statistics['kurtosis'] = kurtosis      
+        return kurtosis
+
+    def get_skewness(self, input_df = None, external_df = False):
+        
+        """
+        Returns the skewness of returns
+        """
+        
+        if 'skewness' in self.statistics and external_df == False:
+            return self.statistics['skewness']   
+        
+        skewness = input_df.skew(axix=1)
+      
+        if external_df == False:
+            self.statistics['skewness'] = skewness      
+        return skewness
         
     def get_mc_simulation(self, index=0, period_length=0):
     
@@ -2216,6 +2266,17 @@ class Analizer:
             plt.show()
         else:
             fig.savefig(saveToFile)
+
+    def get_returns_from_date(self, date, input_df = None):
+    
+        """
+        Returns a pandas dataframe containing all returns since a given date. Date can be pandas datetime, 
+        string or python  datetime.
+        """
+    
+        new_data = self.data.dropna()
+        new_data = new_data.loc[new_data.index > pd.to_datetime(date)]
+        return new_data
             
 
             
