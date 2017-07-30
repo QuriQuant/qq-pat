@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='qqpat',
-      version='1.534',
+      version='1.535',
       description='Python Financial Performance Analysys Tool',
       classifiers=[
         'Development Status :: 3 - Alpha',
@@ -17,7 +17,7 @@ setup(name='qqpat',
       packages=['qqpat'],
       install_requires=[
           'pandas>=0.20.0',
-          'datareader>=0.4',
+          'pandas-datareader>=0.4',
           'scipy',
           'seaborn>=0.6.0',
           'matplotlib>=1.5.0',

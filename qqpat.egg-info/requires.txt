@@ -1,5 +1,5 @@
 pandas>=0.20.0
-datareader>=0.4
+pandas-datareader>=0.4
 scipy
 seaborn>=0.6.0
 matplotlib>=1.5.0

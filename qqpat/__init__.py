@@ -15,7 +15,7 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 
-__version__                = "1.534"
+__version__                = "1.535"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
