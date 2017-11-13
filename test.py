@@ -3,11 +3,11 @@ from pandas_datareader import data
 import datetime
 import qqpat
 
-aapl = data.DataReader('AAPL','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now()) 
+aapl = data.DataReader('AAPL','yahoo',start=datetime.datetime(2016, 1, 1),end=datetime.datetime.now()) 
                                  
-spy = data.DataReader('SPY','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now()) 
+spy = data.DataReader('SPY','yahoo',start=datetime.datetime(2016, 1, 1),end=datetime.datetime.now()) 
                                  
-ibm = data.DataReader('IBM','google',start=datetime.datetime(2003, 1, 1),end=datetime.datetime.now())                                
+ibm = data.DataReader('IBM','yahoo',start=datetime.datetime(2016, 1, 1),end=datetime.datetime.now())                                
 
 data = pd.concat([aapl['Close'], spy['Close'], ibm['Close']], axis=1)
 
@@ -17,10 +17,11 @@ summary = analyzer.get_statistics_summary()
 
 for idx, statistics in enumerate(summary):
     print ""
-    print "statistics for system {}: {}".format(idx, statistics)
+    print "statistics for system {}:".format(idx)
+    for s in statistics:
+        print "{}: {}".format(s, summary[idx][s])
     print ""
-
-
+    
 analyzer.plot_analysis_returns()
 analyzer.min_variance_portfolio_optimization(plotWeights=True)
 
@@ -36,8 +37,10 @@ analyzer.plot_annual_returns()
 analyzer.plot_monthly_returns()
 analyzer.plot_annual_returns()
 analyzer.plot_monthly_return_distribution()
+
+analyzer.plot_drawdown_periods()
 analyzer.plot_drawdown_distribution()
 analyzer.plot_drawdown_length_distribution()
-analyzer.plot_drawdown_periods()
+
 
 

@@ -15,7 +15,7 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 
-__version__                = "1.535"
+__version__                = "1.600"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -126,6 +126,7 @@ class Analizer:
         all_tail_ratio              = self.get_tail_ratio(input_df, external_df)
         all_kurtosis                = self.get_kurtosis(input_df, external_df)
         all_skewness                = self.get_skewness(input_df, external_df)
+        all_pdi                     = self.get_pdi(input_df, external_df)
         
         all_statistics = []
         
@@ -155,6 +156,7 @@ class Analizer:
             statistics['tail_ratio']                = all_tail_ratio[i]
             statistics['kurtosis']                  = all_kurtosis[i]
             statistics['skewness']                  = all_skewness[i]
+            statistics['pdi']                       = all_pdi[i]
             all_statistics.append(statistics)
         
         if external_df == False:    
@@ -192,7 +194,32 @@ class Analizer:
         if external_df == False:    
             self.statistics['omega ratio'] = all_omega_ratio
         return all_omega_ratio
-            
+        
+    def get_pdi(self, input_df = None, external_df = False):
+    
+        """
+        Returns the percentage of business days that the time series has had a non-zero return.
+        """
+    
+        if 'pdi' in self.statistics and external_df == False:
+            return self.statistics['pdi']
+        
+        if external_df == False:
+            data = self.data.dropna()     
+        else:
+            data = input_df  
+                          
+        all_pdi = []        
+        for i in range(0, len(data.columns)):                       
+            df = pd.Series(data.iloc[:,i]).dropna()  
+            days = np.busday_count(df.index[0], df.index[-1])
+            pdi = 100.0*len(df[df != 0])/len(df)
+            all_pdi.append(pdi)
+        
+        if external_df == False:    
+            self.statistics['pdi'] = all_pdi
+        return all_pdi
+                            
     def get_profit_factor(self, input_df = None, external_df = False):
     
         """
@@ -640,11 +667,11 @@ class Analizer:
             df = drawdowns                                               
             fig, ax = plt.subplots(figsize=(12,8), dpi=100)
                
-            ax.bar(list(df['dd_start']), list(df['dd_depth']*100)) 
+            ax.bar(list(df['dd_start'].dt.to_pydatetime()), list(df['dd_depth']*100), 10) 
             ax.axhline(df['dd_depth'].values.mean(), linestyle='dashed', color='black', linewidth=1.5)
             
             for i in range(0, len(df.index)):
-                plt.text(df['dd_start'][i], df['dd_depth'][i]*100, '%d' % int(df['dd_length'][i]),
+                plt.text(df['dd_start'].dt.to_pydatetime()[i], df['dd_depth'][i]*100, '%d' % int(df['dd_length'][i]),
                             horizontalalignment='center',
                             verticalalignment='center',
                             size=6.0
@@ -917,7 +944,7 @@ class Analizer:
                                                    
             fig, ax = plt.subplots(figsize=(20,14), dpi=100)
                
-            ax.bar(df.index, df, 30, align="center") 
+            ax.bar(df.index.to_pydatetime(), df, 30, align="center") 
             ax.axhline(df.values.mean(), linestyle='dashed', color='black', linewidth=1.5)
             
             ax.xaxis.set_major_formatter(DateFormatter('%m-%Y'))
@@ -1080,11 +1107,11 @@ class Analizer:
                 ax1.set_yscale('log')
         
         for axis in [ax1.xaxis, ax1.yaxis]:
-            axis.set_major_formatter(ScalarFormatter())
-        
+            axis.set_major_formatter(ScalarFormatter())    
+            
         ax1.xaxis.set_ticklabels([])
         ax2.xaxis.set_ticklabels([])
-        
+                 
         color_cycle = ax1._get_lines.prop_cycler
         colors = []
         
@@ -1098,12 +1125,12 @@ class Analizer:
         
         for i, column in enumerate(balance.columns):  
             if self.use_titles:                
-                ax1.plot(balance.index, balance[column], label=self.data.columns[i])   
+                ax1.plot(balance.index.to_pydatetime(), balance[column], label=self.data.columns[i])   
             else:
-                ax1.plot(balance.index, balance[column])       
+                ax1.plot(balance.index.to_pydatetime(), balance[column])       
                
-        ax2.plot(weeklyReturns.index, weeklyReturns)
-        ax3.plot(underWaterSeries.index, underWaterSeries)
+        ax2.plot(weeklyReturns.index.to_pydatetime(), weeklyReturns)
+        ax3.plot(underWaterSeries.index.to_pydatetime(), underWaterSeries)
         
         if self.use_titles:
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol= 3, fancybox=True, shadow=True)
@@ -1113,10 +1140,9 @@ class Analizer:
         ax2.set_ylabel('Week return')
         ax3.set_ylabel('Drawdown')
                     
-        #self.timeseries['rolling_maxdd'].plot(label='max_dd')
         for i in range(0, len(max_drawdown_start)):
-            ax1.axvline(max_drawdown_start[i], linestyle='dashed', color=colors[i])
-            ax1.axvline(max_drawdown_end[i], linestyle='dashed', color=colors[i])       
+            ax1.axvline(max_drawdown_start[i].to_pydatetime(), linestyle='dashed', color=colors[i])
+            ax1.axvline(max_drawdown_end[i].to_pydatetime(), linestyle='dashed', color=colors[i])       
         
         ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
@@ -1132,6 +1158,8 @@ class Analizer:
         ax3.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
  
         ax1.set_axisbelow(True)  
+        
+        plt.xticks(rotation=45)
         
         plt.legend()
         if saveToFile == "":
@@ -1239,9 +1267,9 @@ class Analizer:
         
         for i, column in enumerate(balance.columns):  
             if self.use_titles:                
-                ax1.plot(balance.index, balance[column], label=self.data.columns[i])   
+                ax1.plot(balance.index.to_pydatetime(), balance[column], label=self.data.columns[i])   
             else:
-                ax1.plot(balance.index, balance[column])       
+                ax1.plot(balance.index.to_pydatetime(), balance[column])       
                
         ax2.plot(weeklyReturns.index, weeklyReturns)
         ax3.plot(underWaterSeries.index, underWaterSeries)
@@ -1253,8 +1281,8 @@ class Analizer:
                     
         #self.timeseries['rolling_maxdd'].plot(label='max_dd')
         for i in range(0, len(max_drawdown_start)):
-            ax1.axvline(max_drawdown_start[i], linestyle='dashed', color=colors[i])
-            ax1.axvline(max_drawdown_end[i], linestyle='dashed', color=colors[i])       
+            ax1.axvline(max_drawdown_start[i].to_pydatetime(), linestyle='dashed', color=colors[i])
+            ax1.axvline(max_drawdown_end[i].to_pydatetime(), linestyle='dashed', color=colors[i])       
         
         ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
@@ -1416,7 +1444,7 @@ class Analizer:
         if external_df == False:
             self.statistics['stddev returns'] = data.std().values
         return data.std().values
-        
+               
     def get_sharpe_ratio(self, input_df = None, external_df = False):
     
         """
@@ -2075,7 +2103,7 @@ class Analizer:
         using the return data for the specified input data index. The default period length (0) performs a 
         simulation of the same length as the original data series.
         """
-           
+        
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         df = self.data[self.data.index < last_drawdown_start].dropna()
@@ -2084,7 +2112,7 @@ class Analizer:
         
         if period_length == 0:
             period_length = len(df.index)
-                 
+                
         mc_df = df.sample(period_length, replace=True)
         mc_df =  mc_df.set_index(df.index[:period_length])       
         
