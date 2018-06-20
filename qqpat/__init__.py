@@ -15,7 +15,7 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 
-__version__                = "1.600"
+__version__                = "1.601"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -209,11 +209,12 @@ class Analizer:
         else:
             data = input_df  
                           
-        all_pdi = []        
-        for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.iloc[:,i]).dropna()  
-            days = np.busday_count(df.index[0], df.index[-1])
-            pdi = 100.0*len(df[df != 0])/len(df)
+        all_pdi = []  
+        days = len(pd.bdate_range(data.index[0], data.index[-1]))   
+        
+        for i in range(0, len(data.columns)):  
+            c = data.columns[i]
+            pdi = 100.0*len(data[np.abs(data[c]) != 0.0][c])/float(days)
             all_pdi.append(pdi)
         
         if external_df == False:    
@@ -423,7 +424,7 @@ class Analizer:
             cov_mat = pd.DataFrame(covariance.ledoit_wolf(returns)[0]) 
         elif covarianceType == OAS:
             cov_mat = pd.DataFrame(covariance.oas(returns)[0]) 
-        elif covarainceType == SHRUNK_SAMPLE_COVARIANCE:       
+        elif covarianceType == SHRUNK_SAMPLE_COVARIANCE:       
             cov_mat = pd.DataFrame(covariance.shrunk_covariance(returns.cov()))
             
         if covarianceType != SAMPLE_COVARIANCE and covarianceType != LEDOIT_WOLF and covarianceType != OAS and covarianceType != SHRUNK_SAMPLE_COVARIANCE:
@@ -519,7 +520,7 @@ class Analizer:
             cov_mat = pd.DataFrame(covariance.ledoit_wolf(returns)[0]) 
         elif covarianceType == OAS:
             cov_mat = pd.DataFrame(covariance.oas(returns)[0]) 
-        elif covarainceType == SHRUNK_SAMPLE_COVARIANCE:       
+        elif covarianceType == SHRUNK_SAMPLE_COVARIANCE:       
             cov_mat = pd.DataFrame(covariance.shrunk_covariance(returns.cov()))
             
         if covarianceType != SAMPLE_COVARIANCE and covarianceType != LEDOIT_WOLF and covarianceType != OAS and covarianceType != SHRUNK_SAMPLE_COVARIANCE:
@@ -1658,7 +1659,7 @@ class Analizer:
 
         for j in range(0, len(balance.columns)):
         
-            all_recoveries = []
+            all_recoveries = [0.0]
             maxBalance = 1.0
             drawdown = 0.0
             bottom = 0.0
@@ -1704,7 +1705,7 @@ class Analizer:
 
         for j in range(0, len(balance.columns)):
         
-            all_drawdowns = []
+            all_drawdowns = [0.0]
             maxBalance = 1.0
             drawdown = 0.0
             bottom = 0.0
@@ -1749,7 +1750,7 @@ class Analizer:
 
         for j in range(0, len(balance.columns)):
         
-            all_drawdown_lengths = []
+            all_drawdown_lengths = [0.0]
             drawdownStart = balance.index[0] 
             maxBalance = 1.0
             drawdown = 0.0
@@ -2151,26 +2152,36 @@ class Analizer:
     
         mc_cagr = []
         mc_sharpe = []
+        mc_max_dd = []
         
         dd_periods = self.get_dd_periods()[index]
         last_drawdown_start = dd_periods['dd_start'].iloc[-1]
         difference_in_days = len(pd.bdate_range(last_drawdown_start, self.data.index[-1]))
         
-        for i in range(0, iterations):
+        i = 0
+        while i < iterations:
             df = self.get_mc_simulation(index, difference_in_days)
-            mc_cagr.append(-self.get_cagr(input_df = df, external_df = True)[0])
-            mc_sharpe.append(-self.get_sharpe_ratio(input_df = df, external_df = True)[0])
-                     
+            cagr = -self.get_cagr(input_df = df, external_df = True)[0]
+            sharpe = -self.get_sharpe_ratio(input_df = df, external_df = True)[0]
+            max_dd = self.get_max_dd(input_df = df, external_df = True)[0]              
+            
+            mc_cagr.append(cagr)
+            mc_sharpe.append(sharpe)
+            mc_max_dd.append(max_dd)
+            i += 1
+        
         wc_cagr = np.asarray(mc_cagr)
         wc_sharpe = np.asarray(mc_sharpe)
+        wc_max_dd = np.asarray(mc_max_dd)
         
         df1 = self.data[self.data.index > last_drawdown_start].dropna()
         cagr = self.get_cagr(input_df = df1, external_df = True)[0]
         balance =(1+df1).cumprod() 
         sharpe = self.get_sharpe_ratio(input_df = df1, external_df = True)[0]
-                  
-        statistics = {'wc_cagr': -np.percentile(wc_cagr, confidence), 'wc_sharpe': -np.percentile(wc_sharpe, confidence), 'cagr':cagr, 'sharpe': sharpe}
+        max_dd = self.get_max_dd(input_df = df1, external_df = True)[0]
         
+        statistics = {'wc_cagr': -np.percentile(wc_cagr, confidence), 'wc_sharpe': -np.percentile(wc_sharpe, confidence), 'wc_max_dd': np.percentile(wc_max_dd, confidence), 'cagr':cagr, 'sharpe': sharpe, 'max_dd': max_dd}          
+
         return statistics
      
     def plot_mc_simulations(self, index=0, iterations=100, saveToFile=""):
