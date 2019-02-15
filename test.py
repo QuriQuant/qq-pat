@@ -16,11 +16,11 @@ analyzer = qqpat.Analizer(data, column_type='price', titles=["APPL", "SPY", "IBM
 summary = analyzer.get_statistics_summary()
 
 for idx, statistics in enumerate(summary):
-    print ""
-    print "statistics for system {}:".format(idx)
+    print ("")
+    print ("statistics for system {}:".format(idx))
     for s in statistics:
-        print "{}: {}".format(s, summary[idx][s])
-    print ""
+        print ("{}: {}".format(s, summary[idx][s]))
+    print ("")
     
 analyzer.plot_analysis_returns()
 analyzer.min_variance_portfolio_optimization(plotWeights=True)

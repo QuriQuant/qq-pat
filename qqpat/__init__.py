@@ -15,7 +15,7 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 
-__version__                = "1.601"
+__version__                = "1.602"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -438,7 +438,7 @@ class Analizer:
         ret = np.asarray(mu.values).T*w 
         risk = quad_form(w, Sigma)
         prob = Problem(Maximize(ret - gamma*risk), 
-               [sum_entries(w) == 1, 
+               [sum(w) == 1, 
                 w >= minWeight])
                 
         risk_data = np.zeros(samples)
@@ -448,20 +448,20 @@ class Analizer:
         for i in range(samples):
             gamma.value = gamma_vals[i]
             prob.solve(solver=SCS)
-            risk_data[i] = sqrt(risk.value)
+            risk_data[i] = np.sqrt(risk.value)
             ret_data[i] = ret.value
        
             if i == 0:
                 final_w = w.value
-                max_sharpe = ret.value/sqrt(risk.value)
+                max_sharpe = ret.value/risk.value
             
             if (ret.value/risk.value > max_sharpe):
                 final_w = w.value
-                max_sharpe = ret.value/sqrt(risk.value)
+                max_sharpe = ret.value/risk.value
                            
         weights = []
         for weight in final_w:
-            weights.append(float(weight[0]))
+            weights.append(float(weight))
             
         if plotWeights == True:
             fig, ax = plt.subplots(figsize=(12,8), dpi=100)
@@ -529,12 +529,12 @@ class Analizer:
         Sigma = np.asarray(cov_mat.values)
         w = Variable(len(cov_mat))
         risk = quad_form(w, Sigma)
-        prob = Problem(Minimize(risk), [sum_entries(w) == 1, w >= minWeight])    
+        prob = Problem(Minimize(risk), [sum(w) == 1, w >= minWeight])    
         prob.solve(solver=SCS)
     
         weights = []
         for weight in w.value:
-            weights.append(float(weight[0]))
+            weights.append(float(weight))
             
         if plotWeights == True:
             fig, ax = plt.subplots(figsize=(12,8), dpi=100)
@@ -583,7 +583,7 @@ class Analizer:
 
             fig = plt.figure(figsize=(14,12))              
             ax = plt.subplot(1,1,1)
-            max_scale = max(np.amin(-heatmap_data.dropna().as_matrix()), np.amax(heatmap_data.dropna().as_matrix()))
+            max_scale = np.amax([np.amin(-heatmap_data.dropna().values.ravel()), np.amax(heatmap_data.dropna().max().values.ravel())])
             min_scale = -max_scale
             
             heatmap = ax.matshow(heatmap_data, aspect = 'auto', origin = 'lower', cmap ="RdYlGn", vmin=min_scale, vmax=max_scale)
@@ -1079,7 +1079,7 @@ class Analizer:
             else:
                 fig.savefig(saveToFile)
                  
-    def plot_analysis_returns(self, saveToFile=""):
+    def plot_analysis_returns(self, saveToFile="", vertical_line="", plot_drawdown_lines=True):
     
         """
         Plots the cumulative return, the underwater plot and
@@ -1097,11 +1097,11 @@ class Analizer:
 
         underWaterSeries = self.get_underwater_data()
         
-        fig = plt.figure(figsize=(10,10))
+        fig = plt.figure(figsize=(8,10))
               
-        ax1 = plt.subplot2grid((10, 1), (0, 0), rowspan=4)
-        ax2 = plt.subplot2grid((10, 1), (5, 0), rowspan=2)
-        ax3 = plt.subplot2grid((10, 1), (8, 0), rowspan=2)
+        ax1 = plt.subplot2grid((8, 1), (0, 0), rowspan=4)
+        ax2 = plt.subplot2grid((8, 1), (4, 0), rowspan=2)
+        ax3 = plt.subplot2grid((8, 1), (6, 0), rowspan=2)
         
         for column in balance.columns:
             if balance[column][-1] > 10*balance[column][0]:
@@ -1134,16 +1134,23 @@ class Analizer:
         ax3.plot(underWaterSeries.index.to_pydatetime(), underWaterSeries)
         
         if self.use_titles:
-            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol= 3, fancybox=True, shadow=True)
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol= 3, fancybox=True, shadow=True)
         
         ax3.set_xlabel('Time')
         ax1.set_ylabel('Cumulative return')
         ax2.set_ylabel('Week return')
         ax3.set_ylabel('Drawdown')
                     
-        for i in range(0, len(max_drawdown_start)):
-            ax1.axvline(max_drawdown_start[i].to_pydatetime(), linestyle='dashed', color=colors[i])
-            ax1.axvline(max_drawdown_end[i].to_pydatetime(), linestyle='dashed', color=colors[i])       
+        if plot_drawdown_lines:
+            for i in range(0, len(max_drawdown_start)):
+                ax1.axvline(max_drawdown_start[i].to_pydatetime(), linestyle='dashed', color=colors[i])
+                ax1.axvline(max_drawdown_end[i].to_pydatetime(), linestyle='dashed', color=colors[i])    
+            
+        if vertical_line != "":
+            vertical_line_date = datetime.datetime.strptime(vertical_line, '%Y-%m-%d')
+            ax1.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)      
+            ax2.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)  
+            ax3.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)  
         
         ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
         ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
@@ -1166,7 +1173,8 @@ class Analizer:
         if saveToFile == "":
             plt.show()
         else:
-            fig.savefig(saveToFile)
+            fig.savefig(saveToFile)           
+            plt.close() 
             
     def plot_cdf(self, saveToFile=""):
     
@@ -2111,9 +2119,9 @@ class Analizer:
          
         simulated_returns = []
         
-        if period_length == 0:
+        if period_length == 0 or period_length > len(df.index):
             period_length = len(df.index)
-                
+             
         mc_df = df.sample(period_length, replace=True)
         mc_df =  mc_df.set_index(df.index[:period_length])       
         
@@ -2274,7 +2282,7 @@ class Analizer:
             stats = self.get_mc_statistics(index, iterations, confidence, i*100)
             sharpes.append(stats['wc_sharpe']) 
             periods.append(i*100)   
-       
+
         ax.plot(periods, sharpes)
         
         if saveToFile == "":
